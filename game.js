@@ -826,6 +826,21 @@
     });
     $("rd-setup").addEventListener("click", () => { stopStarter(); show("setup"); });
     $("homeBtn").addEventListener("click", () => { stopStarter(); show("setup"); });
+
+    // Theme toggle (light/dark). The inline <head> script set the initial theme;
+    // here we sync the button icon + status-bar colour and wire the switch.
+    const themeBtn = $("themeBtn");
+    const root = document.documentElement;
+    const curTheme = () => (root.getAttribute("data-theme") === "dark" ? "dark" : "light");
+    function applyTheme(t, persist) {
+      root.setAttribute("data-theme", t);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute("content", t === "dark" ? "#1b1e25" : "#e6e9f1");
+      if (themeBtn) themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
+      if (persist) { try { localStorage.setItem("imposter_theme", t); } catch (e) {} }
+    }
+    applyTheme(curTheme(), false);
+    if (themeBtn) themeBtn.addEventListener("click", () => applyTheme(curTheme() === "dark" ? "light" : "dark", true));
   }
 
   document.addEventListener("DOMContentLoaded", init);
