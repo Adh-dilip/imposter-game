@@ -389,6 +389,7 @@
   let round = null; // { word, roles:[{imposter,hint}] }
   let reveal = { idx: 0, shown: false };
   let starterTimer = null; // slot-machine roll for "who goes first"
+  let lastImp = null; // previous round's single imposter — avoid picking them twice in a row
 
   /* ---------- Persistence (roster + settings) ---------- */
   const USED_KEY = "imposter_used_words_v1";   // played-words memory — a revealed word never repeats
@@ -598,9 +599,15 @@
     const hints = shuffle(entry.hints.slice());
 
     const count = players.length;
-    // Uniformly random imposter selection: shuffle all seats, take the first N.
-    const seats = shuffle(Array.from({ length: count }, (_, i) => i));
-    const impSet = new Set(seats.slice(0, cfg.imposters));
+    // Uniformly random imposters. For a single imposter, never the same person
+    // twice in a row — long-run odds stay equal for everyone.
+    let candidates = Array.from({ length: count }, (_, i) => i);
+    if (cfg.imposters === 1 && lastImp !== null && count > 2) {
+      candidates = candidates.filter((i) => i !== lastImp);
+    }
+    const chosen = shuffle(candidates).slice(0, cfg.imposters);
+    const impSet = new Set(chosen);
+    lastImp = cfg.imposters === 1 ? chosen[0] : null;
 
     const roles = [];
     let hintCursor = 0;
