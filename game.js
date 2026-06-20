@@ -391,7 +391,7 @@
   let starterTimer = null; // slot-machine roll for "who goes first"
 
   /* ---------- Persistence (roster + settings) ---------- */
-  const USED_KEY = "imposter_used_words_v1";
+  const USED_KEY = "imposter_used_words_v2";   // bump to wipe played-words memory on a fresh deploy
   const ROSTER_KEY = "imposter_roster_v1";   // last-used roster + settings
 
   function loadUsed() {
