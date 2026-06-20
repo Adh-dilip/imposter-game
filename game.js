@@ -391,11 +391,22 @@
   let starterTimer = null; // slot-machine roll for "who goes first"
 
   /* ---------- Persistence (roster + settings) ---------- */
-  const USED_KEY = "imposter_used_words_v2";   // bump to wipe played-words memory on a fresh deploy
+  const USED_KEY = "imposter_used_words_v1";   // played-words memory — a revealed word never repeats
   const ROSTER_KEY = "imposter_roster_v1";   // last-used roster + settings
 
+  // Load played-words memory, merging anything saved under an older key so a word
+  // that was already revealed never comes back (even across app updates).
   function loadUsed() {
-    try { return JSON.parse(localStorage.getItem(USED_KEY)) || []; } catch (e) { return []; }
+    try {
+      let cur = JSON.parse(localStorage.getItem(USED_KEY)) || [];
+      const legacy = JSON.parse(localStorage.getItem("imposter_used_words_v2")) || [];
+      if (legacy.length) {
+        cur = Array.from(new Set([...cur, ...legacy]));
+        localStorage.setItem(USED_KEY, JSON.stringify(cur));
+        localStorage.removeItem("imposter_used_words_v2");
+      }
+      return cur;
+    } catch (e) { return []; }
   }
   function saveUsed(a) {
     try { localStorage.setItem(USED_KEY, JSON.stringify(a)); } catch (e) {}
