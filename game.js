@@ -364,6 +364,42 @@
       { word: "Cold Feet", hints: ["nervous", "hesitate", "scared", "back out", "wedding", "doubt"] },
       { word: "Long Time No See", hints: ["greeting", "reunion", "missed", "ages", "hello again", "catch up"] },
     ],
+    "🎬 Bollywood Stars": [
+      { word: "Shah Rukh Khan", hints: ["King Khan", "romance", "DDLJ", "dimples", "Badshah", "Mumbai"] },
+      { word: "Salman Khan", hints: ["Bhai", "Dabangg", "Being Human", "fitness", "Tiger", "bachelor"] },
+      { word: "Aamir Khan", hints: ["perfectionist", "Dangal", "3 Idiots", "versatile", "PK", "method"] },
+      { word: "Amitabh Bachchan", hints: ["Big B", "legend", "baritone", "KBC", "veteran", "tall"] },
+      { word: "Hrithik Roshan", hints: ["Greek god", "dance", "Krrish", "green eyes", "fit", "charming"] },
+      { word: "Akshay Kumar", hints: ["Khiladi", "action", "punctual", "comedy", "fit", "patriotic"] },
+      { word: "Ranveer Singh", hints: ["energetic", "loud", "Gully Boy", "fashion", "Deepika", "lively"] },
+      { word: "Ranbir Kapoor", hints: ["Kapoor", "Barfi", "Rockstar", "charming", "Alia", "family"] },
+      { word: "Ajay Devgn", hints: ["intense", "Singham", "action", "calm", "stunts", "Kajol"] },
+      { word: "Shahid Kapoor", hints: ["Kabir Singh", "dancer", "intense", "Jab We Met", "charming", "fit"] },
+      { word: "Deepika Padukone", hints: ["Padmaavat", "tall", "graceful", "Ranveer", "queen", "actress"] },
+      { word: "Priyanka Chopra", hints: ["global", "Miss World", "Quantico", "Nick", "desi girl", "singer"] },
+      { word: "Alia Bhatt", hints: ["Gangubai", "young", "talented", "Ranbir", "Student", "star"] },
+      { word: "Katrina Kaif", hints: ["beauty", "Sheila", "dance", "Tiger", "graceful", "fitness"] },
+      { word: "Kareena Kapoor", hints: ["Bebo", "Poo", "Geet", "Saif", "Kapoor", "diva"] },
+      { word: "Madhuri Dixit", hints: ["dhak dhak", "dance", "smile", "classic", "veteran", "graceful"] },
+    ],
+    "🌟 Famous Nepalis": [
+      { word: "Tenzing Norgay", hints: ["Everest", "Sherpa", "1953", "Hillary", "summit", "mountaineer"] },
+      { word: "Pasang Lhamu Sherpa", hints: ["Everest", "first woman", "Sherpa", "brave", "pioneer", "mountains"] },
+      { word: "Prithvi Narayan Shah", hints: ["king", "unifier", "Gorkha", "founder", "history", "crown"] },
+      { word: "Bhanubhakta Acharya", hints: ["poet", "Adikavi", "Ramayana", "language", "literature", "classic"] },
+      { word: "Laxmi Prasad Devkota", hints: ["Mahakavi", "Muna Madan", "poet", "genius", "literature", "verses"] },
+      { word: "Araniko", hints: ["architect", "artist", "pagoda", "China", "ancient", "builder"] },
+      { word: "Narayan Gopal", hints: ["singer", "legend", "voice", "songs", "Swar Samrat", "classic"] },
+      { word: "Aruna Lama", hints: ["singer", "nightingale", "melody", "hills", "voice", "classic"] },
+      { word: "Rajesh Hamal", hints: ["actor", "Maha Nayak", "films", "hero", "veteran", "popular"] },
+      { word: "Anmol KC", hints: ["actor", "young", "heartthrob", "films", "star", "new"] },
+      { word: "Hari Bansha Acharya", hints: ["comedian", "MaHa", "humor", "actor", "beloved", "duo"] },
+      { word: "Madan Krishna Shrestha", hints: ["comedian", "MaHa", "humor", "actor", "duo", "beloved"] },
+      { word: "Sandeep Lamichhane", hints: ["cricket", "leg-spin", "young", "bowler", "talent", "national"] },
+      { word: "Paras Khadka", hints: ["cricket", "captain", "allrounder", "leader", "national", "veteran"] },
+      { word: "Mahabir Pun", hints: ["internet", "villages", "educator", "innovator", "Magsaysay", "tech"] },
+      { word: "Anuradha Koirala", hints: ["Maiti Nepal", "social work", "women", "rescue", "CNN hero", "savior"] },
+    ],
   };
 
   /* ---------- State ---------- */
@@ -381,10 +417,16 @@
     "Nischal Adhikari",
     "Irish Shilpakar",
     "Prashamsa Tamrakar",
-    "Nisha Rajbahak",
     "Sachin chaudhary",
     "Dilip Adhikari",
   ];
+  // "X Infin" category = our own team. Derived from the roster above so there's
+  // one source of truth. Hints are deliberately neutral/impersonal — the app
+  // never describes anyone; the fun (and the friendly roasting) is up to players.
+  const TEAM_CAT = "🏢 X Infin";
+  const TEAM_HINTS = ["teammate", "colleague", "one of us", "coworker", "office", "friend", "familiar", "X Infin"];
+  CATEGORIES[TEAM_CAT] = DEFAULT_PLAYERS.map((n) => ({ word: n, hints: TEAM_HINTS.slice() }));
+
   let players = DEFAULT_PLAYERS.slice(); // names; blank => "Player N".
   let round = null; // { word, roles:[{imposter,hint}] }
   let reveal = { idx: 0, shown: false };
@@ -578,8 +620,10 @@
 
   /* ---------- Build a round (random imposters + distinct hints) ---------- */
   function buildRound() {
+    // "Random (all)" pulls from every category EXCEPT the team one, so coworker
+    // names only show up when X Infin is picked on purpose.
     const pool = cfg.category === "__ALL__"
-      ? Object.values(CATEGORIES).flat()
+      ? Object.entries(CATEGORIES).filter(([k]) => k !== TEAM_CAT).flatMap(([, v]) => v)
       : CATEGORIES[cfg.category];
 
     // No repeats: exclude already-used words. When the pool is finally
