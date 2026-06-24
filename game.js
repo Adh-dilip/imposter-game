@@ -424,7 +424,9 @@
   // one source of truth. Hints are deliberately neutral/impersonal — the app
   // never describes anyone; the fun (and the friendly roasting) is up to players.
   const TEAM_CAT = "🏢 X Infin";
-  const TEAM_HINTS = ["Sangai", "Milne", "Sathi", "Xinfin", "Busy", "Chiya", "Gaff", "Hami"];
+  // First 4 are the preferred hints (we usually run 4 imposters); the rest only
+  // get used when there are more imposters than that.
+  const TEAM_HINTS = ["Xinfin", "Roj bhetine", "साथी", "हामी", "सँगै", "मिल्ने", "Busy"];
   CATEGORIES[TEAM_CAT] = DEFAULT_PLAYERS.map((n) => ({ word: n, hints: TEAM_HINTS.slice() }));
 
   let players = DEFAULT_PLAYERS.slice(); // names; blank => "Player N".
@@ -640,7 +642,9 @@
     used.push(entry.word);
     saveUsed(used);
 
-    const hints = shuffle(entry.hints.slice());
+    // Team hints stay in their set order so the preferred ones are handed out
+    // first; everything else is shuffled for variety.
+    const hints = cfg.category === TEAM_CAT ? entry.hints.slice() : shuffle(entry.hints.slice());
 
     const count = players.length;
     // Uniformly random imposters. For a single imposter, never the same person
