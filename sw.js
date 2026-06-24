@@ -1,5 +1,5 @@
 /* Offline cache for the Imposter game. Bump CACHE on any file change. */
-const CACHE = "imposter-v41";
+const CACHE = "imposter-v42";
 const ASSETS = [
   "./",
   "./index.html",

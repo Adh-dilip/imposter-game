@@ -429,6 +429,14 @@
   const TEAM_HINTS = ["Xinfin", "Roj bhetine", "साथी", "हामी", "सँगै", "मिल्ने", "Busy"];
   CATEGORIES[TEAM_CAT] = DEFAULT_PLAYERS.map((n) => ({ word: n, hints: TEAM_HINTS.slice() }));
 
+  // "Xinfin Consultants" = a rigged prank round: the secret word is always the
+  // office name, and these four are pre-set as the imposters (by priority).
+  // 3 imposters -> drops the last (Sachin); >4 -> these four + random fills.
+  const XINFIN_CAT = "💼 Xinfin Consultants";
+  const XINFIN_HINTS = ["Office", "Company", "Salary", "Work", "Team", "Job", "Boss"];
+  const XINFIN_IMP = ["yagya raj", "aastha", "prekshya", "sachin"];
+  CATEGORIES[XINFIN_CAT] = [{ word: "Xinfin Consultants Pvt. Ltd", hints: XINFIN_HINTS.slice() }];
+
   let players = DEFAULT_PLAYERS.slice(); // names; blank => "Player N".
   let round = null; // { word, roles:[{imposter,hint}] }
   let reveal = { idx: 0, shown: false };
@@ -620,12 +628,32 @@
     });
   }
 
+  // Rigged "Xinfin Consultants" round: imposter seats chosen by priority name
+  // match, any remainder filled with random seats.
+  function riggedImposters(count, n) {
+    const priority = [];
+    XINFIN_IMP.forEach((needle) => {
+      for (let i = 0; i < count; i++) {
+        if (!priority.includes(i) && playerName(i).toLowerCase().includes(needle)) {
+          priority.push(i);
+          break;
+        }
+      }
+    });
+    let chosen = priority.slice(0, n);
+    if (chosen.length < n) {
+      const rest = shuffle(Array.from({ length: count }, (_, i) => i).filter((i) => !chosen.includes(i)));
+      chosen = chosen.concat(rest.slice(0, n - chosen.length));
+    }
+    return chosen;
+  }
+
   /* ---------- Build a round (random imposters + distinct hints) ---------- */
   function buildRound() {
-    // "Random (all)" pulls from every category EXCEPT the team one, so coworker
-    // names only show up when X Infin is picked on purpose.
+    // "Random (all)" pulls from every category EXCEPT the team / rigged ones, so
+    // coworker names and the office prank only show up when picked on purpose.
     const pool = cfg.category === "__ALL__"
-      ? Object.entries(CATEGORIES).filter(([k]) => k !== TEAM_CAT).flatMap(([, v]) => v)
+      ? Object.entries(CATEGORIES).filter(([k]) => k !== TEAM_CAT && k !== XINFIN_CAT).flatMap(([, v]) => v)
       : CATEGORIES[cfg.category];
 
     // No repeats: exclude already-used words. When the pool is finally
@@ -642,20 +670,28 @@
     used.push(entry.word);
     saveUsed(used);
 
-    // Team hints stay in their set order so the preferred ones are handed out
-    // first; everything else is shuffled for variety.
-    const hints = cfg.category === TEAM_CAT ? entry.hints.slice() : shuffle(entry.hints.slice());
+    // Team / rigged hints stay in their set order so the preferred ones are
+    // handed out first; everything else is shuffled for variety.
+    const fixedHints = cfg.category === TEAM_CAT || cfg.category === XINFIN_CAT;
+    const hints = fixedHints ? entry.hints.slice() : shuffle(entry.hints.slice());
 
     const count = players.length;
-    // Uniformly random imposters. For a single imposter, never the same person
-    // twice in a row — long-run odds stay equal for everyone.
-    let candidates = Array.from({ length: count }, (_, i) => i);
-    if (cfg.imposters === 1 && lastImp !== null && count > 2) {
-      candidates = candidates.filter((i) => i !== lastImp);
+    let chosen;
+    if (cfg.category === XINFIN_CAT) {
+      // Pre-set imposters (Yagya Raj, Aastha, Prekshya, Sachin by priority).
+      chosen = riggedImposters(count, cfg.imposters);
+      lastImp = null;
+    } else {
+      // Uniformly random imposters. For a single imposter, never the same person
+      // twice in a row — long-run odds stay equal for everyone.
+      let candidates = Array.from({ length: count }, (_, i) => i);
+      if (cfg.imposters === 1 && lastImp !== null && count > 2) {
+        candidates = candidates.filter((i) => i !== lastImp);
+      }
+      chosen = shuffle(candidates).slice(0, cfg.imposters);
+      lastImp = cfg.imposters === 1 ? chosen[0] : null;
     }
-    const chosen = shuffle(candidates).slice(0, cfg.imposters);
     const impSet = new Set(chosen);
-    lastImp = cfg.imposters === 1 ? chosen[0] : null;
 
     const roles = [];
     let hintCursor = 0;
