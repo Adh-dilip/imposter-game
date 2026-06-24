@@ -424,7 +424,7 @@
   // one source of truth. Hints are deliberately neutral/impersonal — the app
   // never describes anyone; the fun (and the friendly roasting) is up to players.
   const TEAM_CAT = "🏢 X Infin";
-  const TEAM_HINTS = ["teammate", "colleague", "one of us", "coworker", "office", "friend", "familiar", "X Infin"];
+  const TEAM_HINTS = ["teammate", "colleague", "coworker", "office", "meetings", "lunch buddy", "coffee break", "familiar face"];
   CATEGORIES[TEAM_CAT] = DEFAULT_PLAYERS.map((n) => ({ word: n, hints: TEAM_HINTS.slice() }));
 
   let players = DEFAULT_PLAYERS.slice(); // names; blank => "Player N".
