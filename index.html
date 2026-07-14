@@ -155,7 +155,7 @@
   .hero:active{filter:brightness(1.05)}
   .hero-eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-sub);margin-bottom:5px}
   .hero-title{font-size:31px;font-weight:800;letter-spacing:-.02em;color:var(--hero-tx);line-height:1}
-  .hero-desc{font-size:13.5px;color:var(--hero-sub);margin:7px 0 15px;max-width:58%}
+  .hero-desc{font-size:13.5px;color:var(--hero-sub);margin:7px 0 16px}
   .hero-btn{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--acc);
     font-weight:800;font-size:15px;padding:12px 20px;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.2)}
   .hero-art{position:absolute;right:-14px;bottom:-16px;width:158px;height:158px;pointer-events:none;
@@ -175,14 +175,13 @@
   /* how-it-works steps */
   .steps{display:flex;align-items:flex-start;gap:4px}
   .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
-  .step-n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
-  .step-ic{font-size:23px;line-height:1}
+  .step-ic{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;font-size:25px;line-height:1}
   .step-lb{font-size:11.5px;color:var(--tx);line-height:1.25;font-weight:700}
   .step-sub{font-size:10px;color:var(--mut);line-height:1.2}
-  .step:nth-child(1) .step-n{background:var(--c-teal)}
-  .step:nth-child(3) .step-n{background:var(--c-gold)}
-  .step:nth-child(5) .step-n{background:var(--c-coral)}
-  .step-sep{align-self:center;color:var(--mut);font-size:15px;margin-top:12px;flex:none}
+  .step:nth-child(1) .step-ic{background:rgba(31,191,156,.16)}
+  .step:nth-child(3) .step-ic{background:rgba(242,169,59,.18)}
+  .step:nth-child(5) .step-ic{background:rgba(240,96,63,.16)}
+  .step-sep{align-self:center;color:var(--mut);font-size:15px;margin-top:18px;flex:none}
 
   /* ---------- Bottom tab bar ---------- */
   .tabbar{position:absolute;left:0;right:0;bottom:0;height:calc(var(--tabh) + env(safe-area-inset-bottom));
@@ -486,7 +485,6 @@
         <div class="hero-title">Quick Match</div>
         <div class="hero-desc">Join a random game instantly</div>
         <span class="hero-btn">▶ Play now</span>
-        <img class="hero-art" src="logo.png" alt="">
       </div>
 
       <div class="sec-head"><span>Your lobbies</span><button class="link" id="seeAll">See all</button></div>
@@ -495,11 +493,11 @@
       <div class="sec-head"><span>How it works</span><button class="link" id="viewGuide">View guide</button></div>
       <div class="card" style="padding:16px 12px">
         <div class="steps">
-          <div class="step"><div class="step-n">01</div><div class="step-ic">👥</div><div class="step-lb">Gather players</div><div class="step-sub">Invite friends</div></div>
+          <div class="step"><div class="step-ic">👥</div><div class="step-lb">Gather players</div><div class="step-sub">Invite friends</div></div>
           <div class="step-sep">›</div>
-          <div class="step"><div class="step-n">02</div><div class="step-ic">📝</div><div class="step-lb">Choose a word</div><div class="step-sub">Pick to guess</div></div>
+          <div class="step"><div class="step-ic">📝</div><div class="step-lb">Choose a word</div><div class="step-sub">Pick to guess</div></div>
           <div class="step-sep">›</div>
-          <div class="step"><div class="step-n">03</div><div class="step-ic">🕵️</div><div class="step-lb">Find imposter</div><div class="step-sub">Spot the faker</div></div>
+          <div class="step"><div class="step-ic">🕵️</div><div class="step-lb">Find imposter</div><div class="step-sub">Spot the faker</div></div>
         </div>
       </div>
       <p class="credit" style="margin-top:22px">Designed by <b>Dilip Adhikari</b></p>
