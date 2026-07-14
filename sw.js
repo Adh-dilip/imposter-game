@@ -1,5 +1,5 @@
 /* Offline cache for the Imposter game. Bump CACHE on any file change. */
-const CACHE = "imposter-v63";
+const CACHE = "imposter-v64";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +8,7 @@ const ASSETS = [
   "./icon-192.png",
   "./icon-512.png",
   "./logo.png",
+  "./warm-bg.jpg",
 ];
 
 self.addEventListener("install", (e) => {

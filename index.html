@@ -111,9 +111,12 @@
   }
   .app{flex:1;display:flex;flex-direction:column;max-width:480px;width:100%;margin:0 auto;min-height:0;position:relative}
 
-  /* warm-theme scenery */
+  /* warm-theme wallpaper */
   .scenery{display:none}
-  [data-theme="warm"] .scenery{display:block;position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  [data-theme="warm"] .scenery{display:block;position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+    background:linear-gradient(to bottom, rgba(243,236,217,.28) 0%, rgba(243,236,217,.62) 42%, rgba(243,236,217,.9) 100%),
+      url("warm-bg.jpg") center top/cover no-repeat}
+  [data-theme="warm"] .sc-top,[data-theme="warm"] .sc-bottom{display:none}
   .sc-top{position:absolute;top:0;left:0;width:100%;height:240px}
   .sc-bottom{position:absolute;bottom:0;left:0;width:100%;height:140px}
 

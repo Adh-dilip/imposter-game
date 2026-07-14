@@ -4,7 +4,7 @@ const path = require("path");
 
 const FILES = [
   "index.html", "game.js", "sw.js", "manifest.webmanifest",
-  "logo.png", "icon-192.png", "icon-512.png",
+  "logo.png", "icon-192.png", "icon-512.png", "warm-bg.jpg",
 ];
 
 fs.mkdirSync("www", { recursive: true });
