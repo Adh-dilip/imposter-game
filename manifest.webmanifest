@@ -1,13 +1,13 @@
 {
-  "name": "Imposter — Word Game",
+  "name": "Imposter Word Game",
   "short_name": "Imposter",
   "description": "Pass-the-phone party game. Find the imposter who only has a hint.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#eef1f7",
-  "theme_color": "#f7f8fb",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

@@ -1,4 +1,4 @@
-/* Imposter — pass-the-phone word game. No backend, fully offline.
+/* Imposter pass-the-phone word game. No backend, fully offline.
    Flow: setup -> reveal (pass phone) -> round complete -> next word. */
 (function () {
   "use strict";
@@ -404,260 +404,295 @@
 
   /* ---------- State ---------- */
   const cfg = { imposters: 1, category: "__ALL__", tellCount: 1, impKnows: 1 };
-  // Default office roster. Edit/remove on the setup screen as needed.
   const DEFAULT_PLAYERS = [
-    "Aastha Sapkota",
-    "Shanti Joshi",
-    "Shreya Dahal",
-    "Shreya Tamang",
-    "Prastuti Khanal",
-    "Prekshya Aryal",
-    "Yagya Raj Bogati",
-    "Sunil Raj Bogati",
-    "Nischal Adhikari",
-    "Irish Shilpakar",
-    "Prashamsa Tamrakar",
-    "Sachin chaudhary",
+    "Aastha Sapkota", "Shanti Joshi", "Shreya Dahal", "Shreya Tamang",
+    "Prastuti Khanal", "Prekshya Aryal", "Yagya Raj Bogati", "Sunil Raj Bogati",
+    "Nischal Adhikari", "Irish Shilpakar", "Prashamsa Tamrakar", "Sachin chaudhary",
     "Dilip Adhikari",
   ];
-  // "X Infin" category = our own team. Derived from the roster above so there's
-  // one source of truth. Hints are deliberately neutral/impersonal — the app
-  // never describes anyone; the fun (and the friendly roasting) is up to players.
-  const TEAM_CAT = "🏢 X Infin";
-  // First 4 are the preferred hints (we usually run 4 imposters); the rest only
-  // get used when there are more imposters than that.
-  const TEAM_HINTS = ["Xinfin", "Roj bhetine", "साथी", "हामी", "सँगै", "मिल्ने", "Busy"];
-  CATEGORIES[TEAM_CAT] = DEFAULT_PLAYERS.map((n) => ({ word: n, hints: TEAM_HINTS.slice() }));
-
-  // "Xinfin Consultants" = a rigged prank round: the secret word is always the
-  // office name, and these four are pre-set as the imposters (by priority).
-  // 3 imposters -> drops the last (Sachin); >4 -> these four + random fills.
-  const XINFIN_CAT = "💼 Xinfin Consultants";
-  const XINFIN_HINTS = ["Office", "Company", "Salary", "Work", "Team", "Job", "Boss"];
-  const XINFIN_IMP = ["yagya raj", "aastha", "prekshya", "sachin"];
-  CATEGORIES[XINFIN_CAT] = [{ word: "Xinfin Consultants Pvt. Ltd", hints: XINFIN_HINTS.slice() }];
-
-  let players = DEFAULT_PLAYERS.slice(); // names; blank => "Player N".
-  let round = null; // { word, roles:[{imposter,hint}] }
+  let players = DEFAULT_PLAYERS.slice(); // active roster (editor + running game)
+  let round = null;                      // { word, roles, order }
   let reveal = { idx: 0, shown: false };
-  let starterTimer = null; // slot-machine roll for "who goes first"
-  let lastImp = null; // previous round's single imposter — avoid picking them twice in a row
+  let starterTimer = null;
+  let lastImp = null;
 
-  /* ---------- Persistence (roster + settings) ---------- */
-  const USED_KEY = "imposter_used_words_v1";   // played-words memory — a revealed word never repeats
-  const ROSTER_KEY = "imposter_roster_v1";   // last-used roster + settings
+  let lobbies = [];      // saved player groups
+  let activeId = null;   // lobby being set up / played
+  let editingId = null;  // lobby open in the editor (null = new)
+  let editorReturn = "mygames";
+  let curEmoji = "🎉", curColor = "#6d5df6";
 
-  // Load played-words memory, merging anything saved under an older key so a word
-  // that was already revealed never comes back (even across app updates).
+  /* ---------- Persistence ---------- */
+  const USED_KEY = "imposter_used_words_v1";
+  const LOBBIES_KEY = "imposter_lobbies_v1";
+  const STATS_KEY = "imposter_rounds_v1";
+  const INTRO_KEY = "imposter_seen_intro_v1";
+  const LOBBY_COLORS = ["#6d5df6", "#22c9a0", "#f5b83d", "#ef3b54", "#3b9dff", "#c471f5"];
+  const EMOJIS = ["🎉", "🏢", "👥", "🎮", "🔥", "🌟"];
+
   function loadUsed() {
-    try {
-      let cur = JSON.parse(localStorage.getItem(USED_KEY)) || [];
-      const legacy = JSON.parse(localStorage.getItem("imposter_used_words_v2")) || [];
-      if (legacy.length) {
-        cur = Array.from(new Set([...cur, ...legacy]));
-        localStorage.setItem(USED_KEY, JSON.stringify(cur));
-        localStorage.removeItem("imposter_used_words_v2");
-      }
-      return cur;
-    } catch (e) { return []; }
+    try { return JSON.parse(localStorage.getItem(USED_KEY)) || []; } catch (e) { return []; }
   }
-  function saveUsed(a) {
-    try { localStorage.setItem(USED_KEY, JSON.stringify(a)); } catch (e) {}
-  }
+  function saveUsed(a) { try { localStorage.setItem(USED_KEY, JSON.stringify(a)); } catch (e) {} }
   let used = loadUsed();
 
-  // Auto-save the working roster + settings so nothing is retyped next time.
-  function persist() {
-    try { localStorage.setItem(ROSTER_KEY, JSON.stringify({ players, cfg })); } catch (e) {}
+  function uid() { return "L" + Math.random().toString(36).slice(2, 9); }
+  function loadLobbies() {
+    try { const r = JSON.parse(localStorage.getItem(LOBBIES_KEY)); if (Array.isArray(r) && r.length) return r; } catch (e) {}
+    return null;
   }
-  function loadRoster() {
-    try { return JSON.parse(localStorage.getItem(ROSTER_KEY)); } catch (e) { return null; }
+  function saveLobbies() { try { localStorage.setItem(LOBBIES_KEY, JSON.stringify(lobbies)); } catch (e) {} }
+  function seedLobbies() {
+    return [
+      { id: uid(), name: "Office Crew", emoji: "🏢", color: "#22c9a0",
+        players: DEFAULT_PLAYERS.slice(), cfg: { imposters: 3, category: "__ALL__", tellCount: 1, impKnows: 1 } },
+      { id: uid(), name: "Friends Night", emoji: "🎉", color: "#6d5df6",
+        players: ["Aastha", "Dilip", "Irish", "Nischal", "Prashamsa", "Prekshya"], cfg: { imposters: 1, category: "__ALL__", tellCount: 1, impKnows: 1 } },
+    ];
   }
+  function roundsPlayed() { try { return parseInt(localStorage.getItem(STATS_KEY) || "0", 10) || 0; } catch (e) { return 0; } }
+  function bumpRounds() { try { localStorage.setItem(STATS_KEY, String(roundsPlayed() + 1)); } catch (e) {} }
+  function persistCfg() { const l = byId(activeId); if (l) { l.cfg = Object.assign({}, cfg); saveLobbies(); } }
 
   /* ---------- Helpers ---------- */
   const $ = (id) => document.getElementById(id);
-  function playerName(i) {
-    const n = players[i] && players[i].trim();
-    return n || ("Player " + (i + 1));
-  }
+  function byId(id) { return lobbies.find((x) => x.id === id) || null; }
+  function playerName(i) { const n = players[i] && players[i].trim(); return n || ("Player " + (i + 1)); }
   function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
-  // Keep the roster arranged A-Z; empty names sort to the bottom.
+  function hexA(hex, a) {
+    const h = hex.replace("#", "");
+    return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+  }
   function sortPlayers() {
     players.sort((a, b) => {
-      const ta = (a || "").trim().toLowerCase();
-      const tb = (b || "").trim().toLowerCase();
-      if (!ta && !tb) return 0;
-      if (!ta) return 1;
-      if (!tb) return -1;
+      const ta = (a || "").trim().toLowerCase(), tb = (b || "").trim().toLowerCase();
+      if (!ta && !tb) return 0; if (!ta) return 1; if (!tb) return -1;
       return ta.localeCompare(tb);
     });
   }
-  const screens = ["setup", "reveal", "round"];
-  function show(name) {
-    screens.forEach((s) => $("screen-" + s).classList.toggle("active", s === name));
-    $("homeBtn").style.display = name === "setup" ? "none" : "inline-block";
-  }
-  function shuffle(a) {
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function catLabel(c) { return c === "__ALL__" ? "Random" : c; }
 
-  /* ---------- Setup screen ---------- */
-  function fillCategories() {
-    const sel = $("category");
-    sel.innerHTML = "";
-    const all = document.createElement("option");
-    all.value = "__ALL__"; all.textContent = "🎲 Random (all)";
-    sel.appendChild(all);
-    Object.keys(CATEGORIES).forEach((c) => {
-      const o = document.createElement("option");
-      o.value = c; o.textContent = c;
-      sel.appendChild(o);
+  /* ---------- Navigation ---------- */
+  const SCREENS = ["home", "mygames", "stats", "profile", "lobby", "setup", "reveal", "round"];
+  const TABS = ["home", "mygames", "stats", "profile"];
+  function go(name) {
+    SCREENS.forEach((s) => $("screen-" + s).classList.toggle("active", s === name));
+    $("tabbar").classList.toggle("show", TABS.indexOf(name) >= 0);
+    const sc = $("screen-" + name).querySelector(".scroll");
+    if (sc) sc.scrollTop = 0;
+  }
+  function setTab(tab) {
+    document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === tab));
+    if (tab === "home") { renderHome(); go("home"); }
+    else if (tab === "mygames") { renderMyGames(); go("mygames"); }
+    else if (tab === "stats") { renderStats(); go("stats"); }
+    else if (tab === "profile") { go("profile"); }
+  }
+  function openSheet(id) { $(id).classList.add("show"); }
+  function closeSheet(id) { $(id).classList.remove("show"); }
+
+  /* ---------- Home / lobby lists ---------- */
+  function lobbyEl(l, onClick) {
+    const n = l.players.length, im = Math.min(l.cfg.imposters, Math.max(1, Math.floor(n / 2)));
+    const el = document.createElement("button");
+    el.className = "lobby"; el.type = "button";
+    el.innerHTML =
+      `<span class="lobby-av" style="background:${hexA(l.color, 0.16)};color:${l.color}">${l.emoji || "👥"}</span>` +
+      `<span><span class="lobby-nm">${escapeHtml(l.name)}</span>` +
+      `<span class="lobby-meta"><span>${n} Players</span><span class="imp">${im} Imposter${im > 1 ? "s" : ""}</span></span></span>` +
+      `<span class="lobby-chev">›</span>`;
+    el.addEventListener("click", () => onClick(l));
+    return el;
+  }
+  function fillList(container, onClick) {
+    container.innerHTML = "";
+    if (!lobbies.length) { container.innerHTML = `<div class="empty">No lobbies yet. Tap ＋ to create one.</div>`; return; }
+    lobbies.forEach((l) => container.appendChild(lobbyEl(l, onClick)));
+  }
+  function renderHome() { fillList($("lobby-list"), (l) => openSetup(l.id)); }
+  function renderMyGames() { fillList($("mygames-list"), (l) => openEditor(l.id, "mygames")); }
+  function renderStats() {
+    const n = roundsPlayed();
+    $("stats-count").textContent = n
+      ? `You've played ${n} round${n > 1 ? "s" : ""} on this device. Keep the crew guessing.`
+      : "You've played 0 rounds so far. Play a game and your stats will show up here.";
+  }
+
+  /* ---------- Lobby editor ---------- */
+  function openEditor(id, ret) {
+    editingId = id; editorReturn = ret || "mygames";
+    const l = id ? byId(id) : null;
+    players = l ? l.players.slice() : ["", "", "", "", ""];
+    $("lobby-heading").textContent = l ? "Edit lobby" : "New lobby";
+    $("lobby-name").value = l ? l.name : "";
+    $("lobbyDelete").style.display = l ? "" : "none";
+    curEmoji = l ? (l.emoji || "🎉") : "🎉";
+    curColor = l ? (l.color || "#6d5df6") : "#6d5df6";
+    renderEmojiPick();
+    renderNames();
+    go("lobby");
+  }
+  function renderEmojiPick() {
+    const box = $("emoji-pick"); box.innerHTML = "";
+    EMOJIS.forEach((e, i) => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = e;
+      b.className = "emoji-opt" + (e === curEmoji ? " sel" : "");
+      b.addEventListener("click", () => { curEmoji = e; curColor = LOBBY_COLORS[i % LOBBY_COLORS.length]; renderEmojiPick(); });
+      box.appendChild(b);
     });
-    sel.value = cfg.category;
   }
-
-  function syncSetup() {
-    const maxImp = Math.max(1, Math.floor(players.length / 2));
-    cfg.imposters = clamp(cfg.imposters, 1, maxImp);
-    $("v-imposters").textContent = cfg.imposters;
-    const note = cfg.imposters > 1 ? "Each gets a different hint" : "Gets a hint instead of the word";
-    $("imp-help").textContent = `${note} · max ${maxImp} (half the players)`;
-    $("pcount").textContent = players.length;
-    $("add-player").disabled = players.length >= 15;
-    // Telling the count only makes sense if the imposter knows they're the imposter.
-    $("count-row").style.display = cfg.impKnows ? "" : "none";
-    persist();
+  function saveLobby() {
+    sortPlayers();
+    const name = ($("lobby-name").value || "").trim() || "New lobby";
+    if (editingId) {
+      const l = byId(editingId);
+      l.name = name; l.players = players.slice(); l.emoji = curEmoji; l.color = curColor;
+    } else {
+      const id = uid();
+      lobbies.unshift({ id: id, name: name, players: players.slice(), emoji: curEmoji, color: curColor,
+        cfg: { imposters: 1, category: "__ALL__", tellCount: 1, impKnows: 1 } });
+      editingId = id;
+    }
+    saveLobbies();
+    if (editorReturn === "setup") openSetup(editingId); else setTab("mygames");
   }
-
-  // Reflect a loaded config onto the Yes/No toggle controls.
-  function setToggle(id, attr, val) {
-    $(id).querySelectorAll("button").forEach((b) => {
-      b.classList.toggle("on", b.dataset[attr] === String(val));
-    });
-  }
-  function applyCfgToToggles() {
-    setToggle("knowsToggle", "k", cfg.impKnows);
-    setToggle("countToggle", "c", cfg.tellCount);
+  function deleteLobby() {
+    if (!editingId) return;
+    lobbies = lobbies.filter((x) => x.id !== editingId);
+    saveLobbies();
+    setTab("mygames");
   }
 
   function renderNames() {
-    const list = $("name-list");
-    list.innerHTML = "";
+    const list = $("name-list"); list.innerHTML = "";
     players.forEach((nm, i) => {
-      const row = document.createElement("div");
-      row.className = "name-row";
-
-      const seat = document.createElement("span");
-      seat.className = "seatnum";
-      seat.textContent = i + 1;
-
+      const row = document.createElement("div"); row.className = "name-row";
+      const seat = document.createElement("span"); seat.className = "seatnum"; seat.textContent = i + 1;
       const input = document.createElement("input");
-      input.className = "name-input";
-      input.type = "text";
-      input.value = nm;
-      input.placeholder = "Player " + (i + 1);
-      input.maxLength = 18;
-      input.autocomplete = "off";
-      input.addEventListener("input", (e) => { players[i] = e.target.value; persist(); });
-      // Re-arrange alphabetically once this field is done being edited.
+      input.className = "name-input"; input.type = "text"; input.value = nm;
+      input.placeholder = "Player " + (i + 1); input.maxLength = 18; input.autocomplete = "off";
+      input.addEventListener("input", (e) => { players[i] = e.target.value; });
       input.addEventListener("blur", () => { sortPlayers(); renderNames(); });
-
-      row.appendChild(seat);
-      row.appendChild(input);
-
+      row.appendChild(seat); row.appendChild(input);
       if (players.length > 3) {
         const rm = document.createElement("button");
-        rm.className = "rm";
-        rm.type = "button";
-        rm.textContent = "×";
-        rm.setAttribute("aria-label", "Remove player");
-        rm.addEventListener("click", () => {
-          players.splice(i, 1);
-          renderNames();
-          syncSetup();
-        });
+        rm.className = "rm"; rm.type = "button"; rm.textContent = "×"; rm.setAttribute("aria-label", "Remove player");
+        rm.addEventListener("click", () => { players.splice(i, 1); renderNames(); });
         row.appendChild(rm);
       }
       list.appendChild(row);
     });
-    syncSetup();
+    $("pcount").textContent = players.length;
+    $("add-player").disabled = players.length >= 15;
+    const st = document.querySelector('.stepper[data-step="players"]');
+    if (st) {
+      st.querySelector('[data-d="-1"]').disabled = players.length <= 3;
+      st.querySelector('[data-d="1"]').disabled = players.length >= 15;
+    }
   }
-
   function addPlayer() {
     if (players.length >= 15) return;
-    players.push("");
-    renderNames();
+    players.push(""); renderNames();
     const inputs = $("name-list").querySelectorAll(".name-input");
     if (inputs.length) inputs[inputs.length - 1].focus();
   }
+  function setPlayerCount(n) {
+    n = clamp(n, 3, 15);
+    while (players.length < n) players.push("");
+    while (players.length > n) {
+      const empty = players.map((p, i) => (p && p.trim() ? -1 : i)).filter((i) => i >= 0).pop();
+      players.splice(empty != null ? empty : players.length - 1, 1);
+    }
+    renderNames();
+  }
 
-  function bindSteppers() {
-    document.querySelectorAll(".stepper").forEach((st) => {
-      st.querySelectorAll("button").forEach((b) => {
-        b.addEventListener("click", () => {
-          const key = st.dataset.step;
-          const d = parseInt(b.dataset.d, 10);
-          if (key === "imposters") cfg.imposters = clamp(cfg.imposters + d, 1, Math.max(1, Math.floor(players.length / 2)));
-          syncSetup();
-        });
-      });
-    });
-    $("add-player").addEventListener("click", addPlayer);
-    $("category").addEventListener("change", (e) => { cfg.category = e.target.value; persist(); });
-    bindToggle("countToggle", "c", (v) => (cfg.tellCount = parseInt(v, 10)));
-    bindToggle("knowsToggle", "k", (v) => { cfg.impKnows = parseInt(v, 10); syncSetup(); });
+  /* ---------- Game setup ---------- */
+  function openSetup(id) {
+    activeId = id;
+    const l = byId(id); if (!l) return;
+    Object.assign(cfg, l.cfg);
+    if (cfg.category !== "__ALL__" && !(cfg.category in CATEGORIES)) cfg.category = "__ALL__";
+    players = l.players.slice();
+    renderSetup();
+    go("setup");
+  }
+  function renderSetup() {
+    const l = byId(activeId);
+    $("setup-lobby-name").textContent = l ? l.name : "Ready to play";
+    $("setup-pcount").textContent = players.length;
+    $("deck-word").textContent = catLabel(cfg.category);
+    applyCfgToToggles();
+    syncSetup();
+  }
+  function syncSetup() {
+    const maxImp = Math.max(1, Math.floor(players.length / 2));
+    cfg.imposters = clamp(cfg.imposters, 1, maxImp);
+    $("v-imposters").textContent = cfg.imposters;
+    const rec = Math.max(1, Math.round(players.length / 5));
+    $("imp-help").textContent = `Recommended: ${rec} · max ${maxImp}`;
+    $("count-row").style.display = cfg.impKnows ? "" : "none";
+    const st = document.querySelector('.stepper[data-step="imposters"]');
+    if (st) {
+      st.querySelector('[data-d="-1"]').disabled = cfg.imposters <= 1;
+      st.querySelector('[data-d="1"]').disabled = cfg.imposters >= maxImp;
+    }
+    persistCfg();
+  }
+  function setToggle(id, attr, val) {
+    $(id).querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset[attr] === String(val)));
+  }
+  function applyCfgToToggles() {
+    setToggle("knowsToggle", "k", cfg.impKnows);
+    setToggle("countToggle", "c", cfg.tellCount);
   }
   function bindToggle(id, attr, set) {
     const wrap = $(id);
     wrap.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => {
         wrap.querySelectorAll("button").forEach((x) => x.classList.remove("on"));
-        b.classList.add("on");
-        set(b.dataset[attr]);
-        persist();
+        b.classList.add("on"); set(b.dataset[attr]);
+      });
+    });
+  }
+  function bindSteppers() {
+    document.querySelectorAll(".stepper").forEach((st) => {
+      st.querySelectorAll("button").forEach((b) => {
+        b.addEventListener("click", () => {
+          const key = st.dataset.step, d = parseInt(b.dataset.d, 10);
+          if (key === "players") { setPlayerCount(players.length + d); return; }
+          if (key === "imposters") { cfg.imposters = clamp(cfg.imposters + d, 1, Math.max(1, Math.floor(players.length / 2))); syncSetup(); }
+        });
       });
     });
   }
 
-  // Rigged "Xinfin Consultants" round: imposter seats chosen by priority name
-  // match, any remainder filled with random seats.
-  function riggedImposters(count, n) {
-    const priority = [];
-    XINFIN_IMP.forEach((needle) => {
-      for (let i = 0; i < count; i++) {
-        if (!priority.includes(i) && playerName(i).toLowerCase().includes(needle)) {
-          priority.push(i);
-          break;
-        }
-      }
+  /* ---------- Category picker ---------- */
+  function fillCatPicker() {
+    const box = $("cat-options"); box.innerHTML = "";
+    const opts = [["__ALL__", "🎲 Random (all)"]].concat(Object.keys(CATEGORIES).map((c) => [c, c]));
+    opts.forEach(([val, label]) => {
+      const b = document.createElement("button"); b.type = "button";
+      b.className = "picker-opt" + (val === cfg.category ? " sel" : "");
+      b.innerHTML = `<span>${escapeHtml(label)}</span>` + (val === cfg.category ? `<span class="ck">✓</span>` : "");
+      b.addEventListener("click", () => {
+        cfg.category = val; persistCfg();
+        $("deck-word").textContent = catLabel(val);
+        closeSheet("catPicker");
+      });
+      box.appendChild(b);
     });
-    let chosen = priority.slice(0, n);
-    if (chosen.length < n) {
-      const rest = shuffle(Array.from({ length: count }, (_, i) => i).filter((i) => !chosen.includes(i)));
-      chosen = chosen.concat(rest.slice(0, n - chosen.length));
-    }
-    return chosen;
   }
 
-  /* ---------- Build a round (random imposters + distinct hints) ---------- */
+  /* ---------- Build a round ---------- */
   function buildRound() {
-    // "Random (all)" pulls from every category EXCEPT the team / rigged ones, so
-    // coworker names and the office prank only show up when picked on purpose.
     const pool = cfg.category === "__ALL__"
-      ? Object.entries(CATEGORIES).filter(([k]) => k !== TEAM_CAT && k !== XINFIN_CAT).flatMap(([, v]) => v)
+      ? Object.values(CATEGORIES).flat()
       : CATEGORIES[cfg.category];
-
-    // No repeats: exclude already-used words. When the pool is finally
-    // exhausted, recycle it — but never hand out the word we just played.
     let avail = pool.filter((e) => !used.includes(e.word));
     if (avail.length === 0) {
       const last = used[used.length - 1];
@@ -667,122 +702,81 @@
       if (avail.length === 0) avail = pool.slice();
     }
     const entry = pick(avail);
-    used.push(entry.word);
-    saveUsed(used);
+    used.push(entry.word); saveUsed(used);
 
-    // Team / rigged hints stay in their set order so the preferred ones are
-    // handed out first; everything else is shuffled for variety.
-    const fixedHints = cfg.category === TEAM_CAT || cfg.category === XINFIN_CAT;
-    const hints = fixedHints ? entry.hints.slice() : shuffle(entry.hints.slice());
-
+    const hints = shuffle(entry.hints.slice());
     const count = players.length;
-    let chosen;
-    if (cfg.category === XINFIN_CAT) {
-      // Pre-set imposters (Yagya Raj, Aastha, Prekshya, Sachin by priority).
-      chosen = riggedImposters(count, cfg.imposters);
-      lastImp = null;
-    } else {
-      // Uniformly random imposters. For a single imposter, never the same person
-      // twice in a row — long-run odds stay equal for everyone.
-      let candidates = Array.from({ length: count }, (_, i) => i);
-      if (cfg.imposters === 1 && lastImp !== null && count > 2) {
-        candidates = candidates.filter((i) => i !== lastImp);
-      }
-      chosen = shuffle(candidates).slice(0, cfg.imposters);
-      lastImp = cfg.imposters === 1 ? chosen[0] : null;
-    }
+    let candidates = Array.from({ length: count }, (_, i) => i);
+    if (cfg.imposters === 1 && lastImp !== null && count > 2) candidates = candidates.filter((i) => i !== lastImp);
+    const chosen = shuffle(candidates).slice(0, cfg.imposters);
+    lastImp = cfg.imposters === 1 ? chosen[0] : null;
     const impSet = new Set(chosen);
 
     const roles = [];
     let hintCursor = 0;
     for (let i = 0; i < count; i++) {
-      if (impSet.has(i)) {
-        const hint = hints[hintCursor % hints.length]; // distinct per imposter
-        hintCursor++;
-        roles.push({ imposter: true, hint });
-      } else {
-        roles.push({ imposter: false, hint: null });
-      }
+      if (impSet.has(i)) { roles.push({ imposter: true, hint: hints[hintCursor % hints.length] }); hintCursor++; }
+      else roles.push({ imposter: false });
     }
-    // Pass order = players sorted alphabetically by name (case-insensitive).
-    const order = Array.from({ length: count }, (_, i) => i)
-      .sort((a, b) => playerName(a).toLowerCase().localeCompare(playerName(b).toLowerCase()));
-
-    round = { word: entry.word, roles, order };
-    reveal = { idx: 0, shown: false };
+    round = { word: entry.word, roles: roles, order: shuffle(Array.from({ length: count }, (_, i) => i)) };
   }
 
-  /* ---------- Reveal screen ---------- */
+  /* ---------- Reveal ---------- */
   function renderReveal() {
     const i = reveal.idx;
     $("rv-name").textContent = playerName(round.order[i]);
-    const prog = $("rv-progress");
-    prog.innerHTML = "";
+    const prog = $("rv-progress"); prog.innerHTML = "";
     for (let p = 0; p < players.length; p++) {
       const pip = document.createElement("div");
       pip.className = "pip" + (p < i ? " done" : p === i ? " cur" : "");
       prog.appendChild(pip);
     }
-    reveal.shown = false;
-    reveal.peeked = false;
+    reveal.shown = false; reveal.peeked = false;
     buildRoleContent();
     $("rv-flip").classList.remove("flipped");
+    $("rv-badge").style.visibility = "hidden";
     $("rv-next").style.display = "none";
-    // replay the name entrance animation
-    const nm = $("rv-name");
-    nm.classList.remove("enter");
-    void nm.offsetWidth;
-    nm.classList.add("enter");
+    const nm = $("rv-name"); nm.classList.remove("enter"); void nm.offsetWidth; nm.classList.add("enter");
   }
-
-  // Pre-render the current player's role into the (hidden) card.
   function buildRoleContent() {
     const role = round.roles[round.order[reveal.idx]];
-    // A blind imposter (impKnows off) is shown a card that looks exactly like a crewmate's,
-    // with their hint standing in for the secret word — so they can't tell they're the imposter.
     const showAsImposter = role.imposter && cfg.impKnows;
-    const tag = $("rv-roletag");
-    const body = $("rv-body");
-    const back = document.querySelector(".flip-back");
-    if (back) {
-      back.classList.toggle("is-imp", showAsImposter);
-      back.classList.toggle("is-crew", !showAsImposter);
-    }
+    const tag = $("rv-roletag"), body = $("rv-body"), back = document.querySelector(".flip-back"), badge = $("rv-badge");
+    back.classList.toggle("is-imp", showAsImposter);
+    back.classList.toggle("is-crew", !showAsImposter);
     if (showAsImposter) {
-      tag.textContent = "Imposter";
-      tag.className = "roletag imp";
-      const count = cfg.tellCount && cfg.imposters > 1
-        ? `<div class="imp-count">${cfg.imposters} imposters in play — blend in</div>` : "";
+      tag.textContent = "Imposter"; tag.className = "roletag imp";
+      badge.className = "role-badge imp";
+      badge.innerHTML = `<svg class="mask"><use href="#ic-mask"/></svg><span><span class="rb-sm">You are the</span>IMPOSTER</span>`;
+      const count = cfg.tellCount && cfg.imposters > 1 ? `<div class="imp-count">${cfg.imposters} imposters in play, blend in</div>` : "";
       body.innerHTML =
         `<div class="role-label">Your secret hint</div>` +
         `<div class="theword theword--hint">${escapeHtml(role.hint)}</div>` +
         count +
-        `<div class="role-tip">You don't know the word. Bluff using your hint and don't get caught.</div>`;
+        `<div class="role-tip">💡 Bluff with your hint. Don't get caught.</div>`;
     } else {
-      // Real crewmate sees the word; blind imposter sees their hint in its place.
       const word = role.imposter ? role.hint : round.word;
-      tag.textContent = "Crewmate";
-      tag.className = "roletag crew";
+      tag.textContent = "Crewmate"; tag.className = "roletag crew";
+      badge.className = "role-badge crew";
+      badge.innerHTML = `<svg class="mask"><use href="#ic-mask"/></svg><span><span class="rb-sm">You are a</span>CREWMATE</span>`;
       body.innerHTML =
         `<div class="role-label">The secret word</div>` +
         `<div class="theword">${escapeHtml(word)}</div>` +
-        `<div class="role-tip">Give a clue that proves you know it — without making it too obvious.</div>`;
+        `<div class="role-tip">💡 Give a clue, but not too obvious.</div>`;
     }
   }
-
-  // Hold to reveal — flips the card over.
   function showRole() {
     if (reveal.shown) return;
     reveal.shown = true;
     $("rv-flip").classList.add("flipped");
+    $("rv-badge").style.visibility = "visible";
     if (navigator.vibrate) navigator.vibrate(15);
   }
-
-  // Release flips it back automatically; reveal the "next" button after first peek.
   function hideRole() {
     if (!reveal.shown) return;
     reveal.shown = false;
     $("rv-flip").classList.remove("flipped");
+    $("rv-badge").style.visibility = "hidden";
     if (!reveal.peeked) {
       reveal.peeked = true;
       const next = $("rv-next");
@@ -790,141 +784,135 @@
       next.style.display = "";
     }
   }
-
   function nextReveal() {
-    if (reveal.idx < players.length - 1) {
-      reveal.idx++;
-      renderReveal();
-    } else {
-      roundComplete();
-    }
+    if (reveal.idx < players.length - 1) { reveal.idx++; renderReveal(); }
+    else roundComplete();
   }
 
   /* ---------- Round complete ---------- */
   function roundComplete() {
-    // hide the answer until someone asks for it
     $("round-answer").style.display = "none";
     $("rd-reveal").textContent = "Reveal answer";
-    show("round");
+    go("round");
     rollStarter();
   }
-
-  // Randomly assign who gives the first clue, with a quick slot-machine roll.
   function rollStarter() {
     if (starterTimer) clearInterval(starterTimer);
     const nameEl = $("rd-starter-name");
     const finalIdx = Math.floor(Math.random() * players.length);
-    let ticks = 0;
-    const total = 13;
-    nameEl.classList.remove("landed");
-    nameEl.classList.add("rolling");
+    let ticks = 0; const total = 13;
+    nameEl.classList.remove("landed"); nameEl.classList.add("rolling");
     starterTimer = setInterval(() => {
       ticks++;
       if (ticks >= total) {
-        clearInterval(starterTimer);
-        starterTimer = null;
+        clearInterval(starterTimer); starterTimer = null;
         nameEl.textContent = playerName(finalIdx);
-        nameEl.classList.remove("rolling");
-        nameEl.classList.add("landed");
+        nameEl.classList.remove("rolling"); nameEl.classList.add("landed");
         if (navigator.vibrate) navigator.vibrate(35);
       } else {
         nameEl.textContent = playerName(Math.floor(Math.random() * players.length));
       }
     }, 70);
   }
-
-  function stopStarter() {
-    if (starterTimer) { clearInterval(starterTimer); starterTimer = null; }
-  }
-
+  function stopStarter() { if (starterTimer) { clearInterval(starterTimer); starterTimer = null; } }
   function renderAnswer() {
     $("rd-word").textContent = round.word;
-    const imps = round.roles
-      .map((r, i) => ({ ...r, num: i + 1 }))
-      .filter((r) => r.imposter);
-    $("rd-imp-title").textContent =
-      imps.length > 1 ? `The ${imps.length} imposters were…` : "The imposter was…";
-    const list = $("rd-imps");
-    list.innerHTML = "";
+    const imps = round.roles.map((r, i) => ({ ...r, num: i + 1 })).filter((r) => r.imposter);
+    $("rd-imp-title").textContent = imps.length > 1 ? `The ${imps.length} imposters were…` : "The imposter was…";
+    const list = $("rd-imps"); list.innerHTML = "";
     imps.forEach((r) => {
-      const row = document.createElement("div");
-      row.className = "imp-row";
-      row.innerHTML =
-        `<span class="num">${r.num}</span><span>${escapeHtml(playerName(r.num - 1))}</span>` +
-        `<span class="h">hint: ${escapeHtml(r.hint)}</span>`;
+      const row = document.createElement("div"); row.className = "imp-row";
+      row.innerHTML = `<span class="num">${r.num}</span><span>${escapeHtml(playerName(r.num - 1))}</span><span class="h">hint: ${escapeHtml(r.hint)}</span>`;
       list.appendChild(row);
     });
+  }
+  function toggleAnswer() {
+    const a = $("round-answer"), open = a.style.display !== "none";
+    if (open) { a.style.display = "none"; $("rd-reveal").textContent = "Reveal answer"; }
+    else { renderAnswer(); a.style.display = ""; $("rd-reveal").textContent = "Hide answer"; }
   }
 
   function startRound() {
     stopStarter();
     buildRound();
+    bumpRounds();
+    reveal = { idx: 0, shown: false };
     renderReveal();
-    show("reveal");
+    go("reveal");
+  }
+  function quickPlay() {
+    if (!lobbies.length) { openEditor(null, "home"); return; }
+    const l = lobbies[0];
+    activeId = l.id;
+    Object.assign(cfg, l.cfg, { category: "__ALL__" });
+    players = l.players.slice();
+    startRound();
   }
 
-  /* ---------- Wire up ---------- */
+  /* ---------- Init ---------- */
   function init() {
-    const yearEl = $("year");
-    if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+    const yr = $("year"); if (yr) yr.textContent = String(new Date().getFullYear());
+    lobbies = loadLobbies() || seedLobbies();
+    saveLobbies();
 
-    // Restore the last-used roster + settings, if any.
-    const saved = loadRoster();
-    if (saved && Array.isArray(saved.players) && saved.players.length >= 3) {
-      players = saved.players.slice(0, 15);
-      if (saved.cfg && typeof saved.cfg === "object") Object.assign(cfg, saved.cfg);
-    }
-    // Guard against a stored category that no longer exists.
-    if (cfg.category !== "__ALL__" && !(cfg.category in CATEGORIES)) cfg.category = "__ALL__";
-
-    fillCategories();
-    applyCfgToToggles();
-    sortPlayers();
-    renderNames();
-    syncSetup();
+    fillCatPicker();
     bindSteppers();
-
-    $("startBtn").addEventListener("click", startRound);
+    bindToggle("countToggle", "c", (v) => { cfg.tellCount = parseInt(v, 10); persistCfg(); });
+    bindToggle("knowsToggle", "k", (v) => { cfg.impKnows = parseInt(v, 10); syncSetup(); });
 
     const card = $("rv-card");
     card.addEventListener("pointerdown", (e) => { e.preventDefault(); showRole(); });
     card.addEventListener("pointerup", hideRole);
     card.addEventListener("pointerleave", hideRole);
     card.addEventListener("pointercancel", hideRole);
-    // Block the long-press selection/callout menu on mobile while holding.
     card.addEventListener("contextmenu", (e) => e.preventDefault());
     $("rv-next").addEventListener("click", (e) => { e.stopPropagation(); nextReveal(); });
 
-    $("rd-next").addEventListener("click", startRound);
-    $("rd-reveal").addEventListener("click", () => {
-      const a = $("round-answer");
-      const open = a.style.display !== "none";
-      if (open) {
-        a.style.display = "none";
-        $("rd-reveal").textContent = "Reveal answer";
-      } else {
-        renderAnswer();
-        a.style.display = "";
-        $("rd-reveal").textContent = "Hide answer";
-      }
-    });
-    $("rd-setup").addEventListener("click", () => { stopStarter(); show("setup"); });
-    $("homeBtn").addEventListener("click", () => { stopStarter(); show("setup"); });
+    $("startBtn").addEventListener("click", startRound);
+    $("quickPlay").addEventListener("click", quickPlay);
+    $("seeAll").addEventListener("click", () => setTab("mygames"));
+    $("viewGuide").addEventListener("click", () => openSheet("guide"));
+    $("newLobbyBtn").addEventListener("click", () => openEditor(null, "mygames"));
+    $("setupBack").addEventListener("click", () => setTab("home"));
+    $("revealBack").addEventListener("click", () => openSetup(activeId));
+    $("roundBack").addEventListener("click", () => setTab("home"));
+    $("playersPill").addEventListener("click", () => openEditor(activeId, "setup"));
+    $("changeCat").addEventListener("click", () => openSheet("catPicker"));
+    $("catClose").addEventListener("click", () => closeSheet("catPicker"));
+    $("catPicker").addEventListener("click", (e) => { if (e.target.id === "catPicker") closeSheet("catPicker"); });
 
-    // Theme toggle (light/dark). The inline <head> script set the initial theme;
-    // here we sync the button icon + status-bar colour and wire the switch.
-    const themeBtn = $("themeBtn");
-    const root = document.documentElement;
-    const curTheme = () => (root.getAttribute("data-theme") === "dark" ? "dark" : "light");
-    function applyTheme(t, persist) {
-      root.setAttribute("data-theme", t);
+    $("lobbyBack").addEventListener("click", () => { if (editorReturn === "setup") openSetup(activeId); else setTab("mygames"); });
+    $("lobby-save").addEventListener("click", saveLobby);
+    $("lobbyDelete").addEventListener("click", deleteLobby);
+    $("add-player").addEventListener("click", addPlayer);
+
+    $("rd-next").addEventListener("click", startRound);
+    $("rd-setup").addEventListener("click", () => openSetup(activeId));
+    $("rd-reveal").addEventListener("click", toggleAnswer);
+
+    document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
+      const tab = t.dataset.tab;
+      if (tab === "create") openEditor(null, "mygames"); else setTab(tab);
+    }));
+
+    $("intro-ok").addEventListener("click", () => { closeSheet("intro"); try { localStorage.setItem(INTRO_KEY, "1"); } catch (e) {} });
+    $("guide-ok").addEventListener("click", () => closeSheet("guide"));
+
+    // Light / dark theme toggle (header button)
+    const themeBtn = $("crownBtn");
+    const curTheme = () => (document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
+    function applyTheme(t, save) {
+      document.documentElement.setAttribute("data-theme", t);
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute("content", t === "dark" ? "#1b1e25" : "#e6e9f1");
-      if (themeBtn) themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
-      if (persist) { try { localStorage.setItem("imposter_theme", t); } catch (e) {} }
+      if (meta) meta.setAttribute("content", t === "light" ? "#eceef5" : "#0a0a0f");
+      if (themeBtn) themeBtn.textContent = t === "light" ? "☀️" : "🌙";
+      if (save) { try { localStorage.setItem("imposter_theme", t); } catch (e) {} }
     }
     applyTheme(curTheme(), false);
-    if (themeBtn) themeBtn.addEventListener("click", () => applyTheme(curTheme() === "dark" ? "light" : "dark", true));
+    if (themeBtn) themeBtn.addEventListener("click", () => applyTheme(curTheme() === "light" ? "dark" : "light", true));
+
+    setTab("home");
+    try { if (!localStorage.getItem(INTRO_KEY)) openSheet("intro"); } catch (e) {}
   }
 
   document.addEventListener("DOMContentLoaded", init);

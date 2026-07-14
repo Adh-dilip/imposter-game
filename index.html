@@ -1,346 +1,552 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<meta name="theme-color" content="#e6e9f1" />
+<meta name="theme-color" content="#0a0a0f" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Imposter" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-192.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<title>Imposter — Word Game</title>
+<title>Imposter Word Game</title>
 <script>
-  /* set the theme before paint to avoid a flash */
-  (function(){try{var t=localStorage.getItem('imposter_theme');
-    if(t!=='dark'&&t!=='light'){t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';}
-    document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+  /* apply saved theme before paint to avoid a flash; default dark */
+  (function(){try{var t=localStorage.getItem('imposter_theme');if(t!=='light'&&t!=='dark')t='dark';
+    document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
 </script>
 <style>
   :root{
-    --page:#e6e9f1;
-    --bg:#e9ecf3;
-    --sl:#ffffff;
-    --sd:#c4c9d7;
-    --tx:#28304a;
-    --mut:#7f879e;
-    --acc:#2563eb;
-    --acc-shadow:rgba(22,68,170,.38);
-    --good:#10b981;
-    --danger:#f43f5e;
-    --line:rgba(120,132,168,.16);
-    --card:#eef1f7;
-    --card-shadow:rgba(35,55,105,.20);
-    --card-edge:rgba(255,255,255,.85);
-    --emboss:#dee4ef;
-    --ph:#9aa1b4;
+    --page:#0a0a0f;
+    --card:#14151d;
+    --card-2:#1a1b25;
+    --line:rgba(255,255,255,.07);
+    --line-2:rgba(255,255,255,.13);
+    --tx:#f4f5fa;
+    --mut:#8b90a6;
+    --ph:#565b70;
+    --acc:#6d5df6;
+    --acc-2:#8b7bff;
+    --acc-glow:rgba(109,93,246,.45);
+    --good:#22c9a0;
+    --good-glow:rgba(34,201,160,.34);
+    --danger:#ef3b54;
+    --danger-glow:rgba(239,59,84,.4);
+    --gold:#f5b83d;
+    --shadow:0 12px 34px rgba(0,0,0,.45);
+    --shadow-sm:0 6px 18px rgba(0,0,0,.4);
+    --glow-top:rgba(109,93,246,.16);
+    --tabbar-bg:rgba(14,15,21,.86);
+    --eye:#ffffff;
+    --tabh:66px;
   }
-  [data-theme="dark"]{
-    --page:#1b1e25;
-    --bg:#272b34;
-    --sl:#343a47;
-    --sd:#171a20;
-    --tx:#e7ebf3;
-    --mut:#959db2;
-    --acc:#5b8cff;
-    --acc-shadow:rgba(0,0,0,.5);
-    --good:#34d399;
-    --danger:#fb7185;
-    --line:rgba(180,190,215,.12);
-    --card:#2c313b;
-    --card-shadow:rgba(0,0,0,.5);
-    --card-edge:rgba(255,255,255,.07);
-    --emboss:#21262f;
-    --ph:#6b7488;
-  }
-  :root{
-    --raise:6px 6px 14px var(--sd), -6px -6px 14px var(--sl);
-    --raise-sm:4px 4px 9px var(--sd), -4px -4px 9px var(--sl);
-    --inset:inset 5px 5px 11px var(--sd), inset -5px -5px 11px var(--sl);
-    --inset-sm:inset 3px 3px 7px var(--sd), inset -3px -3px 7px var(--sl);
-    --inset-dot:inset 2px 2px 4px var(--sd), inset -2px -2px 4px var(--sl);
+  [data-theme="light"]{
+    --page:#eceef5;
+    --card:#ffffff;
+    --card-2:#f2f3f9;
+    --line:rgba(24,27,45,.09);
+    --line-2:rgba(24,27,45,.16);
+    --tx:#1b1d2b;
+    --mut:#6b7188;
+    --ph:#a3a7b8;
+    --acc:#6d5df6;
+    --acc-2:#5a46e6;
+    --acc-glow:rgba(109,93,246,.26);
+    --good:#0fa981;
+    --good-glow:rgba(15,169,129,.24);
+    --danger:#e0293f;
+    --danger-glow:rgba(224,41,63,.24);
+    --gold:#d99a1c;
+    --shadow:0 12px 30px rgba(30,35,80,.10);
+    --shadow-sm:0 6px 16px rgba(30,35,80,.08);
+    --glow-top:rgba(109,93,246,.11);
+    --tabbar-bg:rgba(255,255,255,.85);
+    --eye:#1b1d2b;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
   body{
-    font-family:"Inter","Noto Sans Devanagari",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    color:var(--tx);
-    min-height:100dvh;
-    display:flex;flex-direction:column;
-    overflow:hidden;
-    -webkit-font-smoothing:antialiased;
-    text-rendering:optimizeLegibility;
-    user-select:none;-webkit-user-select:none;
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    background:var(--page);
+    font-family:"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Helvetica","Arial","Noto Sans Devanagari","Nirmala UI",sans-serif;
+    color:var(--tx);min-height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;user-select:none;-webkit-user-select:none;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+    background:radial-gradient(120% 55% at 50% -8%, var(--glow-top), transparent 60%), var(--page);
     transition:background-color .25s ease, color .25s ease;
   }
-  .app{flex:1;display:flex;flex-direction:column;max-width:480px;width:100%;margin:0 auto;padding:18px 18px 22px;min-height:0}
+  .app{flex:1;display:flex;flex-direction:column;max-width:480px;width:100%;margin:0 auto;min-height:0;position:relative}
 
-  header{display:flex;align-items:center;gap:11px;margin-bottom:18px;flex-shrink:0}
-  .brand-mark{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;color:var(--acc);font-weight:900;font-size:19px;
-    background:var(--bg);box-shadow:var(--raise-sm)}
-  .brand-text{display:flex;flex-direction:column;line-height:1.16;min-width:0}
-  .logo{font-weight:800;font-size:18px;letter-spacing:-.02em;color:var(--tx)}
-  .spacer{flex:1}
-  .byline{white-space:nowrap;margin-top:2px;font-size:12px;font-weight:700;letter-spacing:.01em;color:var(--acc)}
-  @media (max-width:360px){ .byline{font-size:11px} }
-  .theme-toggle{width:38px;height:38px;border-radius:50%;border:0;background:var(--bg);color:var(--tx);font-size:17px;line-height:1;
-    display:grid;place-items:center;box-shadow:var(--raise-sm);cursor:pointer;flex:none}
-  .theme-toggle:active{box-shadow:var(--inset-sm)}
+  .mask{width:100%;height:100%;display:block}
+  .mask-eye{fill:var(--eye)}
 
-  .screen{flex:1;display:none;flex-direction:column;min-height:0;animation:screenIn .4s cubic-bezier(.2,.7,.2,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  /* ---------- Screens ---------- */
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;min-height:0;animation:screenIn .34s cubic-bezier(.2,.7,.2,1)}
   .screen.active{display:flex}
-  @keyframes screenIn{from{opacity:0;transform:translateY(12px) scale(.99)}to{opacity:1;transform:none}}
+  @keyframes screenIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 18px 22px;min-height:0}
+  .scroll.tabbed{padding-bottom:calc(var(--tabh) + 20px)}
+  .col-center{display:flex;flex-direction:column;align-items:center;text-align:center}
 
-  h1{font-size:25px;font-weight:800;letter-spacing:-.025em;margin:0 0 6px;color:var(--tx)}
-  h2{font-size:15px;font-weight:600;margin:0 0 12px;letter-spacing:-.01em;color:var(--tx)}
+  /* ---------- Top bars ---------- */
+  .topbar{display:flex;align-items:center;gap:10px;padding:12px 18px 6px;flex-shrink:0}
+  .topbar .logo{font-weight:800;font-size:17px;letter-spacing:.24em;color:var(--tx);padding-left:.24em}
+  .topbar .title{font-weight:700;font-size:16px;letter-spacing:-.01em}
+  .spacer{flex:1}
+  .icon-btn{min-width:40px;height:40px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--mut);
+    font-size:17px;font-weight:700;line-height:1;display:grid;place-items:center;cursor:pointer;flex:none;transition:.15s}
+  .icon-btn.round{border-radius:50%;width:40px;padding:0}
+  .icon-btn:active{background:var(--card-2);color:var(--tx)}
+  .icon-btn.crown{color:var(--gold);border-color:rgba(245,184,61,.3);background:rgba(245,184,61,.08)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);
+    background:var(--card);color:var(--tx);font-size:13px;font-weight:700;cursor:pointer}
+  .pill b{font-weight:700}
+
+  h1{font-size:26px;font-weight:700;letter-spacing:-.025em;margin:0 0 6px;color:var(--tx)}
+  h2{font-size:15px;font-weight:700;margin:0 0 12px;letter-spacing:-.01em;color:var(--tx)}
   p.sub{color:var(--mut);margin:0 0 20px;font-size:14px;line-height:1.55}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--acc-2);margin:0 0 8px}
+  .link{border:0;background:none;color:var(--acc-2);font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;padding:2px}
 
-  .card{background:var(--bg);border-radius:22px;padding:6px 18px;box-shadow:var(--raise)}
-  .card + .card{margin-top:18px}
+  /* ---------- Home ---------- */
+  .welcome{margin:6px 0 18px}
+  .welcome-sm{color:var(--mut);font-size:14px;font-weight:500}
+  .welcome-lg{display:flex;align-items:center;gap:8px;font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+  .welcome-lg .dot{width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
+  .quickplay{width:100%;display:flex;align-items:center;gap:14px;text-align:left;border:1px solid var(--line);
+    background:linear-gradient(120deg,var(--card-2),var(--card));border-radius:20px;padding:18px;cursor:pointer;box-shadow:var(--shadow)}
+  .quickplay:active{filter:brightness(1.06)}
+  .qp-t{font-size:15px;font-weight:700;letter-spacing:.02em}
+  .qp-s{font-size:13px;color:var(--mut);margin-top:3px}
+  .qp-btn{margin-left:auto;width:52px;height:52px;border-radius:16px;background:var(--acc);display:grid;place-items:center;color:#fff;font-size:18px;
+    box-shadow:0 10px 26px var(--acc-glow);flex:none}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;margin:24px 2px 12px}
+  .sec-head span{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+  .lobby{width:100%;display:flex;align-items:center;gap:13px;text-align:left;border:1px solid var(--line);background:var(--card);
+    border-radius:18px;padding:14px;cursor:pointer;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+  .lobby:active{background:var(--card-2)}
+  .lobby-av{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;flex:none}
+  .lobby-nm{font-size:15px;font-weight:700}
+  .lobby-meta{font-size:12.5px;color:var(--mut);margin-top:3px;display:flex;gap:10px}
+  .lobby-meta .imp{color:var(--danger);font-weight:700}
+  .lobby-chev{margin-left:auto;color:var(--mut);font-size:20px;flex:none}
+  .empty{border:1px dashed var(--line-2);border-radius:18px;padding:26px 18px;text-align:center;color:var(--mut);font-size:13.5px}
 
+  /* how-to steps strip */
+  .steps{display:flex;justify-content:space-between;gap:8px;margin-top:4px}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;position:relative}
+  .step-ic{width:52px;height:52px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:22px;color:var(--acc-2)}
+  .step-n{font-size:11px;font-weight:700;color:var(--acc-2)}
+  .step-lb{font-size:11.5px;color:var(--mut);line-height:1.3;font-weight:600}
+
+  /* ---------- Bottom tab bar ---------- */
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:calc(var(--tabh) + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);display:none;align-items:stretch;
+    background:var(--tabbar-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);z-index:20}
+  .tabbar.show{display:flex}
+  .tab{flex:1;border:0;background:none;color:var(--mut);font-family:inherit;font-size:10px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0}
+  .tab .ti{font-size:19px;line-height:1}
+  .tab.active{color:var(--acc-2)}
+  .tab.create .ti{width:44px;height:44px;margin-top:-16px;border-radius:16px;background:var(--acc);color:#fff;display:grid;place-items:center;
+    font-size:26px;font-weight:400;box-shadow:0 8px 22px var(--acc-glow)}
+
+  /* ---------- Cards / rows (shared) ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:4px 18px;box-shadow:var(--shadow)}
+  .card + .card{margin-top:16px}
   .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 2px}
   .row + .row{border-top:1px solid var(--line)}
   .label{font-size:15px;font-weight:600;color:var(--tx)}
   .label small{display:block;color:var(--mut);font-size:12.5px;margin-top:3px;font-weight:400}
+  .card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 2px 13px;font-weight:700;font-size:15px;border-bottom:1px solid var(--line)}
 
-  .card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 2px 13px;font-weight:800;font-size:15px;border-bottom:1px solid var(--line)}
-  .badge{background:var(--bg);color:var(--acc);font-size:13px;font-weight:800;padding:4px 13px;border-radius:999px;min-width:36px;text-align:center;box-shadow:var(--inset-sm)}
+  .emoji-pick{display:flex;gap:9px;flex-wrap:wrap}
+  .emoji-opt{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card-2);font-size:20px;cursor:pointer;line-height:1}
+  .emoji-opt.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+
   .name-row{display:flex;align-items:center;gap:11px;padding:9px 2px;border-bottom:1px solid var(--line)}
-  .seatnum{width:28px;height:28px;border-radius:9px;background:var(--bg);box-shadow:var(--inset-sm);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--mut);flex-shrink:0}
+  .seatnum{width:28px;height:28px;border-radius:9px;background:var(--card-2);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--mut);flex-shrink:0}
   .name-input{flex:1;border:0;background:transparent;font-size:15px;font-weight:600;font-family:inherit;color:var(--tx);padding:7px 2px;min-width:0;user-select:text;-webkit-user-select:text}
   .name-input:focus{outline:none}
   .name-input::placeholder{color:var(--ph);font-weight:400}
-  .name-row .rm{width:30px;height:30px;border:0;background:var(--bg);color:var(--mut);font-size:18px;line-height:1;border-radius:9px;flex-shrink:0;box-shadow:var(--raise-sm)}
-  .name-row .rm:active{box-shadow:var(--inset-sm);color:var(--danger)}
-  .add-btn{width:100%;border:0;background:var(--bg);color:var(--acc);font-weight:700;font-size:14px;font-family:inherit;padding:14px;border-radius:13px;margin:14px 0 8px;cursor:pointer;box-shadow:var(--raise-sm)}
-  .add-btn:active{box-shadow:var(--inset-sm)}
-  .add-btn:disabled{opacity:.45;box-shadow:var(--inset-sm);pointer-events:none}
+  .name-row .rm{width:30px;height:30px;border:1px solid var(--line);background:var(--card-2);color:var(--mut);font-size:18px;line-height:1;border-radius:9px;flex-shrink:0}
+  .name-row .rm:active{background:rgba(239,59,84,.14);color:var(--danger);border-color:transparent}
+  .add-btn{width:100%;border:1px dashed var(--line-2);background:transparent;color:var(--acc-2);font-weight:700;font-size:14px;font-family:inherit;padding:13px;border-radius:13px;margin:14px 0 8px;cursor:pointer}
+  .add-btn:active{background:var(--card-2)}
+  .add-btn:disabled{opacity:.4;pointer-events:none}
   .card-note{color:var(--mut);font-size:12px;margin:8px 2px 8px}
 
-  .stepper{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:14px;padding:5px;box-shadow:var(--inset-sm)}
-  .stepper button{width:34px;height:34px;border-radius:10px;border:0;background:var(--bg);color:var(--acc);font-size:22px;font-weight:600;display:grid;place-items:center;line-height:1;box-shadow:var(--raise-sm)}
-  .stepper button:active{box-shadow:var(--inset-sm)}
-  .stepper .val{min-width:30px;text-align:center;font-size:17px;font-weight:800;color:var(--tx);font-variant-numeric:tabular-nums}
+  /* ---------- Steppers ---------- */
+  .stepper{display:flex;align-items:center;gap:10px}
+  .stepper button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line-2);background:var(--card-2);color:var(--acc-2);font-size:21px;font-weight:500;display:grid;place-items:center;line-height:1;transition:.13s}
+  .stepper button:active{background:var(--acc);color:#fff;border-color:transparent}
+  .stepper button:disabled{opacity:.3;pointer-events:none}
+  .stepper .val{min-width:26px;text-align:center;font-size:18px;font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums}
+  .stepper.big{justify-content:center;gap:26px;margin:6px 0 2px}
+  .stepper.big button{width:52px;height:52px;font-size:26px}
+  .stepper.big .val{font-size:40px;min-width:52px}
 
-  select{appearance:none;background:var(--bg) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239aa1b4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center;
-    color:var(--tx);border:0;border-radius:12px;padding:11px 36px 11px 14px;font-size:14.5px;font-weight:600;font-family:inherit;max-width:60%;box-shadow:var(--inset-sm)}
+  /* ---------- Toggle ---------- */
+  .toggle{display:flex;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+  .toggle button{flex:1;border:0;background:transparent;color:var(--mut);padding:8px 14px;border-radius:9px;font-weight:700;font-size:13.5px;font-family:inherit;transition:.16s}
+  .toggle button.on{background:var(--acc);color:#fff;box-shadow:0 4px 14px var(--acc-glow)}
 
-  .toggle{display:flex;background:var(--bg);border-radius:13px;padding:5px;gap:4px;box-shadow:var(--inset-sm)}
-  .toggle button{flex:1;border:0;background:transparent;color:var(--mut);padding:8px 13px;border-radius:9px;font-weight:700;font-size:13.5px;font-family:inherit;transition:.16s}
-  .toggle button.on{background:var(--bg);color:var(--acc);box-shadow:var(--raise-sm)}
-
-  .btn{display:block;width:100%;border:0;border-radius:15px;padding:16px;font-size:16px;font-weight:700;color:#fff;background:var(--acc);font-family:inherit;letter-spacing:-.01em;cursor:pointer;
-    box-shadow:0 9px 22px var(--acc-shadow), inset 0 1px 0 rgba(255,255,255,.26);transition:box-shadow .13s,filter .13s,transform .13s}
-  .btn:active{transform:translateY(1px);filter:brightness(.97)}
-  .btn.big{padding:18px;font-size:17px}
-  .btn.accent2{background:var(--acc)}
-  .btn.ghost{background:var(--bg);color:var(--tx);box-shadow:var(--raise-sm)}
-  .btn.ghost:active{box-shadow:var(--inset-sm);transform:none;filter:none}
-  .btn.warn{background:#f59e0b;color:#1a1300}
-  .btn.danger{background:var(--danger)}
-  .btn:disabled{opacity:.45;box-shadow:var(--inset-sm);pointer-events:none}
+  /* ---------- Buttons ---------- */
+  .btn{display:block;width:100%;border:0;border-radius:14px;padding:17px;font-size:16px;font-weight:700;color:#fff;background:var(--acc);font-family:inherit;letter-spacing:.03em;cursor:pointer;
+    box-shadow:0 10px 28px var(--acc-glow);transition:transform .13s,filter .13s}
+  .btn:active{transform:translateY(1px);filter:brightness(1.06)}
+  .btn.ghost{background:var(--card-2);color:var(--tx);border:1px solid var(--line);box-shadow:none}
+  .btn.ghost:active{background:var(--card);transform:none}
+  .btn.danger{background:var(--danger);box-shadow:0 10px 28px var(--danger-glow)}
+  .btn:disabled{opacity:.45;pointer-events:none;box-shadow:none}
   .btnrow{display:flex;gap:12px}
   .btnrow .btn{margin:0}
-  .mt{margin-top:18px}
-  .mta{margin-top:auto}
+  .mt{margin-top:16px}
 
-  /* Reveal screen */
-  .reveal-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center}
-  .passto{font-size:12px;color:var(--mut);margin-bottom:5px;text-transform:uppercase;letter-spacing:.14em;font-weight:700}
-  .pname{font-size:27px;font-weight:800;margin-bottom:22px;letter-spacing:-.02em;color:var(--tx)}
+  .cta-bar{flex-shrink:0;padding:12px 18px calc(16px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top,var(--page) 62%,transparent)}
+
+  /* ---------- Game Setup deck ---------- */
+  .deck{position:relative;margin:8px 4px 4px;padding-top:10px}
+  .deck::before,.deck::after{content:"";position:absolute;left:14px;right:14px;top:0;height:26px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+  .deck::after{left:26px;right:26px;top:-8px;opacity:.6}
+  .deck-card{position:relative;background:linear-gradient(165deg,var(--card-2),var(--card));border:1px solid var(--line-2);border-radius:22px;
+    padding:30px 22px;box-shadow:var(--shadow);text-align:center}
+  .deck-label{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--acc-2);margin-bottom:12px}
+  .deck-word{font-size:34px;font-weight:800;letter-spacing:-.02em;color:var(--tx);line-height:1.1}
+  .deck-card .link{margin-top:16px;display:inline-flex;align-items:center;gap:6px}
+  .mini-label{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);margin:26px 0 6px;text-align:center}
+  .rec{font-size:12.5px;color:var(--mut);text-align:center;margin:6px 0 22px}
+
+  /* ---------- Reveal ---------- */
+  .passto{font-size:12px;color:var(--mut);margin-bottom:5px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;text-align:center}
+  .pname{font-size:26px;font-weight:700;margin-bottom:18px;letter-spacing:-.02em;color:var(--tx);text-align:center}
   .pname.enter{animation:popin .4s both}
+  .role-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:12px;font-weight:700;font-size:11px;line-height:1.15;text-align:left}
+  .role-badge .rb-sm{font-size:9px;font-weight:700;opacity:.85;letter-spacing:.04em;display:block}
+  .role-badge .mask{width:18px;height:18px}
+  .role-badge.imp{background:rgba(239,59,84,.14);border:1px solid rgba(239,59,84,.5);color:var(--danger)}
+  .role-badge.crew{background:rgba(34,201,160,.14);border:1px solid rgba(34,201,160,.5);color:var(--good)}
 
-  .tapcard{position:relative;flex:1;max-height:60vh;border-radius:30px;cursor:pointer;touch-action:none;-webkit-touch-callout:none;
-    perspective:1100px;-webkit-perspective:1100px;perspective-origin:50% 40%;margin:6px 4px}
+  .tapcard{position:relative;flex:1;min-height:300px;max-height:56vh;border-radius:26px;cursor:pointer;touch-action:none;-webkit-touch-callout:none;
+    perspective:1100px;-webkit-perspective:1100px;perspective-origin:50% 40%;margin:2px 2px}
   .card-float{position:absolute;inset:0;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;animation:floaty 7s ease-in-out infinite;will-change:transform}
   @keyframes floaty{0%,100%{transform:translateY(-3px)}50%{transform:translateY(3px)}}
   .flip-inner{position:absolute;inset:0;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.8,.2,1);will-change:transform}
   .flip-inner.flipped{transform:rotateY(180deg)}
-  .flip-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 30px;border-radius:30px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-    background:var(--card);border:1px solid var(--card-edge);
-    box-shadow:0 26px 54px var(--card-shadow), inset 0 1px 0 var(--card-edge)}
-
-  /* locked face — glossy reveal emblem */
-  .lock-badge{position:relative;width:114px;height:114px;border-radius:50%;display:grid;place-items:center;font-size:48px;font-weight:900;color:var(--acc);
-    background:linear-gradient(160deg, var(--sl), var(--emboss));
-    box-shadow:0 14px 28px var(--card-shadow), inset 0 3px 5px var(--sl), inset 0 -9px 18px var(--sd)}
-  .lock-badge::before{content:"";position:absolute;inset:-16px;border-radius:50%;border:2px solid currentColor;animation:pulsering 2.2s ease-out infinite}
-  @keyframes pulsering{0%{transform:scale(.85);opacity:.5}100%{transform:scale(1.5);opacity:0}}
-  .front-caption{position:absolute;left:24px;right:24px;bottom:34px}
-  .flip-front .hint-tap{font-size:18px;color:var(--tx);font-weight:800}
+  .flip-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;border-radius:26px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:linear-gradient(165deg,var(--card-2),var(--card));border:1px solid var(--line-2);box-shadow:var(--shadow)}
+  .lock-badge{position:relative;width:118px;height:118px;border-radius:50%;display:grid;place-items:center;color:var(--acc);
+    font-size:62px;font-weight:800;line-height:1;text-shadow:0 0 26px var(--acc-glow);
+    background:radial-gradient(circle at 50% 40%,rgba(109,93,246,.22),transparent 70%)}
+  .lock-badge .mask{width:82px;height:82px;filter:drop-shadow(0 0 18px var(--acc-glow))}
+  .lock-badge::before{content:"";position:absolute;inset:2px;border-radius:50%;border:1px solid rgba(139,123,255,.35);animation:pulsering 2.2s ease-out infinite}
+  @keyframes pulsering{0%{transform:scale(.9);opacity:.6}100%{transform:scale(1.5);opacity:0}}
+  .front-caption{position:absolute;left:24px;right:24px;bottom:32px}
+  .flip-front .hint-tap{font-size:18px;color:var(--tx);font-weight:700}
   .flip-front .hint-sub{font-size:13px;color:var(--mut);margin-top:7px}
 
-  /* role face */
   .flip-back{transform:rotateY(180deg)}
-  .flip-back::before{content:"";position:absolute;top:16px;left:50%;transform:translateX(-50%);width:46px;height:5px;border-radius:999px;background:var(--mut);opacity:.5}
-  .flip-back.is-crew{box-shadow:0 26px 54px var(--card-shadow), inset 0 1px 0 var(--card-edge), inset 0 0 0 2px rgba(16,185,129,.5)}
-  .flip-back.is-imp{box-shadow:0 26px 54px var(--card-shadow), inset 0 1px 0 var(--card-edge), inset 0 0 0 2px rgba(244,63,94,.5)}
-  .flip-back.is-crew::before{background:var(--good);opacity:1}
-  .flip-back.is-imp::before{background:var(--danger);opacity:1}
-
-  .roletag{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;margin-bottom:18px;padding:8px 18px;border-radius:999px;display:inline-block;color:#fff}
-  .roletag.crew{background:linear-gradient(135deg,#34d399,#059669);box-shadow:0 10px 22px rgba(16,150,110,.36)}
-  .roletag.imp{background:linear-gradient(135deg,#fb7185,#e11d48);box-shadow:0 10px 22px rgba(225,29,72,.36)}
-  .role-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:4px}
-  .theword{font-size:44px;font-weight:900;line-height:1.04;margin:6px 0 2px;letter-spacing:-.03em;color:var(--tx)}
-  .theword--hint{background:linear-gradient(135deg, var(--acc), #8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .role-tip{font-size:13.5px;color:var(--mut);margin-top:16px;line-height:1.5;max-width:92%}
-  .imp-count{font-size:12.5px;color:var(--danger);font-weight:700;margin-top:10px;letter-spacing:.02em}
-  .clue{font-size:14px;color:var(--mut);margin-top:12px;line-height:1.5}
-  .clue b{color:var(--acc);font-weight:700}
+  .flip-back.is-crew{border-color:rgba(34,201,160,.55);box-shadow:0 0 0 1px rgba(34,201,160,.3),0 20px 50px var(--good-glow)}
+  .flip-back.is-imp{border-color:rgba(239,59,84,.6);box-shadow:0 0 0 1px rgba(239,59,84,.35),0 20px 50px var(--danger-glow)}
+  .roletag{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-bottom:16px;padding:8px 18px;border-radius:999px;display:inline-block;color:#fff}
+  .roletag.crew{background:linear-gradient(135deg,#2dd4a7,#0f9d78);box-shadow:0 10px 22px var(--good-glow)}
+  .roletag.imp{background:linear-gradient(135deg,#ff5e77,#d61f3c);box-shadow:0 10px 22px var(--danger-glow)}
+  .role-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:6px}
+  .theword{font-size:42px;font-weight:800;line-height:1.04;margin:2px 0;letter-spacing:-.03em;color:var(--tx)}
+  .theword--hint{background:linear-gradient(135deg,var(--acc-2),#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .flip-back.is-imp .theword--hint{background:linear-gradient(135deg,#ff8a9b,#ff5e77);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .role-tip{font-size:13px;color:var(--mut);margin-top:14px;line-height:1.5;max-width:92%;display:flex;align-items:center;gap:7px;justify-content:center}
+  .imp-count{font-size:12px;color:var(--danger);font-weight:700;margin-top:10px;letter-spacing:.02em}
 
   .flip-inner.flipped .roletag{animation:popin .45s .18s both}
   .flip-inner.flipped #rv-body > *{animation:popin .5s both}
   .flip-inner.flipped #rv-body > *:nth-child(1){animation-delay:.2s}
-  .flip-inner.flipped #rv-body > *:nth-child(2){animation-delay:.25s}
-  .flip-inner.flipped #rv-body > *:nth-child(3){animation-delay:.3s}
-  .flip-inner.flipped #rv-body > *:nth-child(4){animation-delay:.35s}
+  .flip-inner.flipped #rv-body > *:nth-child(2){animation-delay:.26s}
+  .flip-inner.flipped #rv-body > *:nth-child(3){animation-delay:.32s}
   @keyframes popin{0%{opacity:0;transform:translateY(10px) scale(.96)}100%{opacity:1;transform:none}}
 
-  .progress{display:flex;gap:7px;justify-content:center;margin-top:22px;flex-wrap:wrap}
-  .pip{width:9px;height:9px;border-radius:50%;background:var(--bg);box-shadow:var(--inset-dot);transition:.15s}
-  .pip.done{background:var(--good);box-shadow:none}
-  .pip.cur{background:var(--acc);box-shadow:0 0 9px var(--acc);transform:scale(1.3)}
+  .progress{display:flex;gap:7px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+  .pip{width:8px;height:8px;border-radius:50%;background:var(--card-2);border:1px solid var(--line-2);transition:.15s}
+  .pip.done{background:var(--good);border-color:transparent}
+  .pip.cur{background:var(--acc);border-color:transparent;box-shadow:0 0 10px var(--acc);transform:scale(1.35)}
 
-  .center{text-align:center}
-
-  .starter{display:inline-flex;flex-direction:column;align-items:center;gap:8px;margin:8px auto 12px;
-    background:var(--bg);border-radius:20px;padding:18px 34px;box-shadow:var(--raise)}
+  /* ---------- Round complete ---------- */
+  .emoji-badge{width:76px;height:76px;margin:2px auto 8px;border-radius:22px;display:grid;place-items:center;color:var(--acc);
+    background:linear-gradient(160deg,var(--card-2),var(--card));border:1px solid var(--line);box-shadow:0 0 26px var(--acc-glow)}
+  .emoji-badge .mask{width:46px;height:46px}
+  .starter{display:inline-flex;flex-direction:column;align-items:center;gap:8px;margin:8px auto 12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 34px;box-shadow:var(--shadow-sm)}
   .starter-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--mut)}
-  .starter-name{font-size:27px;font-weight:900;letter-spacing:-.02em;line-height:1.05;min-height:30px;color:var(--acc)}
+  .starter-name{font-size:27px;font-weight:800;letter-spacing:-.02em;line-height:1.05;min-height:30px;
+    background:linear-gradient(135deg,var(--acc-2),#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
   .starter-name.rolling{opacity:.7;filter:blur(.3px)}
   .starter-name.landed{animation:landpop .42s cubic-bezier(.2,1.4,.35,1) both}
   @keyframes landpop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
-
-  .result-word{font-size:30px;font-weight:900;text-align:center;margin:8px 0 2px;letter-spacing:-.02em;color:var(--tx)}
+  .result-word{font-size:28px;font-weight:800;text-align:left;margin:6px 0 2px;letter-spacing:-.02em;color:var(--tx)}
   .imp-list{display:flex;flex-direction:column;gap:10px;margin:10px 0}
-  .imp-row{display:flex;align-items:center;gap:11px;background:var(--bg);border-radius:13px;padding:13px 14px;font-weight:600;color:var(--tx);box-shadow:var(--inset-sm)}
-  .imp-row .num{width:26px;height:26px;border-radius:50%;background:var(--danger);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}
+  .imp-row{display:flex;align-items:center;gap:11px;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px;font-weight:600;color:var(--tx)}
+  .imp-row .num{width:26px;height:26px;border-radius:50%;background:var(--danger);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex-shrink:0}
   .imp-row .h{color:var(--mut);font-size:13px;margin-left:auto;font-weight:500}
 
-  .foot{color:var(--mut);font-size:12px;text-align:center;margin-top:16px}
-  a{color:var(--acc)}
+  /* ---------- Placeholder (stats / profile) ---------- */
+  .placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:6px}
+  .placeholder .pic{width:82px;height:82px;border-radius:24px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:34px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+  .placeholder h2{font-size:20px;margin:0 0 4px}
+  .placeholder p{color:var(--mut);font-size:14px;max-width:260px;line-height:1.5;margin:0}
 
-  .credit{flex-shrink:0;text-align:center;color:var(--mut);font-size:11.5px;letter-spacing:.02em;padding-top:14px;margin-top:10px}
-  .credit b{color:var(--acc);font-weight:700}
+  a{color:var(--acc-2)}
+  .credit{flex-shrink:0;text-align:center;color:var(--mut);font-size:11px;letter-spacing:.02em;padding:10px 0 14px}
+  .credit b{color:var(--acc-2);font-weight:700}
+
+  /* ---------- Overlays (splash + guide + category picker) ---------- */
+  .sheet{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;padding:28px 24px calc(24px + env(safe-area-inset-bottom));
+    background:radial-gradient(90% 45% at 50% 8%, rgba(109,93,246,.22), transparent 62%), var(--page);animation:introFade .3s ease}
+  .sheet.show{display:flex}
+  @keyframes introFade{from{opacity:0}to{opacity:1}}
+  .sheet-inner{margin:auto 0;width:100%;max-width:420px;margin-left:auto;margin-right:auto;animation:popin .4s both}
+  .emblem{position:relative;width:150px;height:150px;margin:6px auto 18px;display:grid;place-items:center}
+  .brand-logo{width:100%;height:100%;object-fit:contain;display:block}
+  .wordmark{text-align:center;font-weight:800;font-size:30px;letter-spacing:.24em;color:var(--tx);padding-left:.24em}
+  .tagline{text-align:center;color:var(--mut);font-size:14px;margin:9px 0 24px;line-height:1.5}
+  .tagline b{color:var(--acc-2);font-weight:700}
+  .how{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 16px;box-shadow:var(--shadow);margin-bottom:22px}
+  .intro-step{display:flex;gap:13px;align-items:center;padding:13px 2px}
+  .intro-step + .intro-step{border-top:1px solid var(--line)}
+  .intro-ic{width:42px;height:42px;border-radius:12px;background:var(--card-2);border:1px solid var(--line);display:grid;place-items:center;font-size:19px;flex-shrink:0}
+  .intro-tx{font-size:13.5px;line-height:1.5;color:var(--mut);font-weight:500}
+  .intro-tx b{font-weight:700;color:var(--tx)}
+
+  /* category picker */
+  .picker{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,.55);animation:introFade .2s ease}
+  .picker.show{display:flex}
+  .picker-panel{background:var(--card);border-top-left-radius:24px;border-top-right-radius:24px;border-top:1px solid var(--line-2);
+    max-height:78dvh;display:flex;flex-direction:column;animation:sheetUp .3s cubic-bezier(.2,.8,.2,1) both;padding-bottom:env(safe-area-inset-bottom)}
+  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+  .picker-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;border-bottom:1px solid var(--line)}
+  .picker-head h2{margin:0;font-size:17px;font-weight:700}
+  .picker-list{overflow-y:auto;padding:8px 12px 16px}
+  .picker-opt{width:100%;text-align:left;border:0;background:none;color:var(--tx);font-family:inherit;font-size:15px;font-weight:600;
+    padding:14px 12px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+  .picker-opt:active{background:var(--card-2)}
+  .picker-opt.sel{color:var(--acc-2)}
+  .picker-opt .ck{color:var(--acc-2);font-weight:700}
 
   @media (prefers-reduced-motion: reduce){
     .card-float,.lock-badge::before{animation:none}
-    .screen{animation:none}
+    .screen,.sheet,.sheet-inner,.picker-panel{animation:none}
   }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-mask" viewBox="0 0 120 120">
+    <path d="M60 12C34 12 20 33 20 59c0 29 18 49 40 49s40-20 40-49C100 33 86 12 60 12Z" fill="currentColor" opacity=".14"/>
+    <path d="M60 12C34 12 20 33 20 59c0 29 18 49 40 49s40-20 40-49C100 33 86 12 60 12Z" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linejoin="round"/>
+    <path class="mask-eye" d="M35 57 57 49 57 62 35 62Z"/>
+    <path class="mask-eye" d="M85 57 63 49 63 62 85 62Z"/>
+  </symbol>
+</svg>
+
 <div class="app">
-  <header>
-    <span class="brand-mark">?</span>
-    <span class="brand-text">
-      <span class="logo">Imposter</span>
-      <span class="byline">Designed by Dilip Adhikari</span>
-    </span>
-    <span class="spacer"></span>
-    <button id="themeBtn" class="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
-    <button id="homeBtn" class="btn ghost" style="width:auto;padding:9px 16px;font-size:13px;display:none">Quit</button>
-  </header>
 
-  <!-- SETUP -->
-  <section id="screen-setup" class="screen active">
-    <h1>Who's the imposter?</h1>
-    <p class="sub">Everyone sees the same secret word — except the imposters, who each get a different hint. Pass the phone around, then talk it out and guess the faker.</p>
-
-    <div class="card players-card">
-      <div class="card-head"><span>Players</span><span class="badge" id="pcount">5</span></div>
-      <div id="name-list"></div>
-      <button id="add-player" class="add-btn" type="button">+ Add player</button>
-      <p class="card-note">Phone is passed in A–Z name order.</p>
+  <!-- ============ HOME ============ -->
+  <section id="screen-home" class="screen">
+    <div class="topbar">
+      <button class="icon-btn round" id="menuBtn" aria-label="Menu">☰</button>
+      <span class="spacer"></span>
+      <span class="logo">IMPOSTER</span>
+      <span class="spacer"></span>
+      <button class="icon-btn round" id="crownBtn" aria-label="Toggle light or dark theme">🌙</button>
     </div>
+    <div class="scroll tabbed">
+      <div class="welcome">
+        <div class="welcome-sm">Welcome back,</div>
+        <div class="welcome-lg">Crewmate <i class="dot"></i></div>
+      </div>
 
-    <div class="card">
-      <div class="row">
-        <div class="label">Imposters<small id="imp-help">Gets a hint instead of the word</small></div>
-        <div class="stepper" data-step="imposters">
-          <button data-d="-1">−</button><span class="val" id="v-imposters">1</span><button data-d="1">+</button>
+      <button class="quickplay" id="quickPlay">
+        <div>
+          <div class="qp-t">QUICK PLAY</div>
+          <div class="qp-s">Play a random game</div>
         </div>
+        <span class="qp-btn">▶</span>
+      </button>
+
+      <div class="sec-head"><span>Your lobbies</span><button class="link" id="seeAll">See all</button></div>
+      <div id="lobby-list"></div>
+
+      <div class="sec-head"><span>How to play</span><button class="link" id="viewGuide">View guide</button></div>
+      <div class="steps">
+        <div class="step"><div class="step-ic">👥</div><div class="step-n">1</div><div class="step-lb">Gather players</div></div>
+        <div class="step"><div class="step-ic">🃏</div><div class="step-n">2</div><div class="step-lb">Choose words</div></div>
+        <div class="step"><div class="step-ic">🕵️</div><div class="step-n">3</div><div class="step-lb">Find the imposter</div></div>
       </div>
-      <div class="row">
-        <div class="label">Category</div>
-        <select id="category"></select>
-      </div>
-      <div class="row">
-        <div class="label">Imposter knows their role<small>Off = they think they're a crewmate</small></div>
-        <div class="toggle" id="knowsToggle">
-          <button data-k="1" class="on">Yes</button>
-          <button data-k="0">No</button>
-        </div>
-      </div>
-      <div class="row" id="count-row">
-        <div class="label">Tell imposters the count<small>Show imposters how many there are</small></div>
-        <div class="toggle" id="countToggle">
-          <button data-c="1" class="on">Yes</button>
-          <button data-c="0">No</button>
-        </div>
-      </div>
+      <p class="credit" style="margin-top:26px">Designed by <b>Dilip Adhikari</b></p>
     </div>
-
-    <button id="startBtn" class="btn accent2 big mt">Start game</button>
   </section>
 
-  <!-- REVEAL -->
+  <!-- ============ MY GAMES (lobby manager) ============ -->
+  <section id="screen-mygames" class="screen">
+    <div class="topbar"><span class="title">My Games</span><span class="spacer"></span><button class="pill" id="newLobbyBtn">＋ New</button></div>
+    <div class="scroll tabbed">
+      <div class="sec-head"><span>Saved lobbies</span></div>
+      <div id="mygames-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section id="screen-stats" class="screen">
+    <div class="topbar"><span class="title">Stats</span></div>
+    <div class="scroll tabbed">
+      <div class="placeholder">
+        <div class="pic">📊</div>
+        <h2>Rounds played</h2>
+        <p id="stats-count">You've played 0 rounds so far. Play a game and your stats will show up here.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROFILE ============ -->
+  <section id="screen-profile" class="screen">
+    <div class="topbar"><span class="title">Profile</span></div>
+    <div class="scroll tabbed">
+      <div class="placeholder">
+        <div class="pic">🕵️</div>
+        <h2>Crewmate</h2>
+        <p>Your local profile. Accounts and sync are coming later. For now everything stays on this device.</p>
+      </div>
+      <p class="credit" style="margin-top:20px">© <span id="year">2026</span> <b>Dilip Adhikari</b> · All rights reserved</p>
+    </div>
+  </section>
+
+  <!-- ============ LOBBY EDITOR ============ -->
+  <section id="screen-lobby" class="screen">
+    <div class="topbar">
+      <button class="icon-btn round" id="lobbyBack" aria-label="Back">‹</button>
+      <span class="title" id="lobby-heading">New lobby</span>
+      <span class="spacer"></span>
+      <button class="icon-btn round" id="lobbyDelete" aria-label="Delete lobby" style="color:var(--danger)">🗑</button>
+    </div>
+    <div class="scroll">
+      <div class="card" style="padding:14px 18px">
+        <div class="row" style="border:0;padding:6px 2px">
+          <div class="emoji-pick" id="emoji-pick"></div>
+        </div>
+        <div class="name-row" style="border:0"><input class="name-input" id="lobby-name" placeholder="Lobby name" maxlength="22" style="font-size:17px;font-weight:700"></div>
+      </div>
+
+      <div class="card players-card">
+        <div class="card-head"><span>Players</span>
+          <div class="stepper" data-step="players">
+            <button data-d="-1" aria-label="Fewer players">−</button><span class="val" id="pcount">5</span><button data-d="1" aria-label="More players">+</button>
+          </div>
+        </div>
+        <div id="name-list"></div>
+        <button id="add-player" class="add-btn" type="button">+ Add player</button>
+        <p class="card-note">Phone is passed in A to Z name order.</p>
+      </div>
+    </div>
+    <div class="cta-bar"><button id="lobby-save" class="btn">Save lobby</button></div>
+  </section>
+
+  <!-- ============ GAME SETUP ============ -->
+  <section id="screen-setup" class="screen">
+    <div class="topbar">
+      <button class="icon-btn round" id="setupBack" aria-label="Back">‹</button>
+      <span class="spacer"></span>
+      <button class="pill" id="playersPill">👥 <b id="setup-pcount">8</b> Players</button>
+    </div>
+    <div class="scroll">
+      <div class="col-center">
+        <p class="eyebrow">Game setup</p>
+        <h1 id="setup-lobby-name">Ready to play</h1>
+        <p class="sub">Everyone sees the secret word. The imposters get a hint to blend in.</p>
+      </div>
+
+      <div class="deck" id="catDeck">
+        <div class="deck-card">
+          <div class="deck-label">Category</div>
+          <div class="deck-word" id="deck-word">Random</div>
+          <button class="link" id="changeCat" type="button">🔄 Change category</button>
+        </div>
+      </div>
+
+      <p class="mini-label">Number of imposters</p>
+      <div class="stepper big" data-step="imposters">
+        <button data-d="-1" aria-label="Fewer imposters">−</button><span class="val" id="v-imposters">1</span><button data-d="1" aria-label="More imposters">+</button>
+      </div>
+      <p class="rec" id="imp-help">Recommended: 1</p>
+
+      <div class="card">
+        <div class="row">
+          <div class="label">Imposter knows their role<small>Off = they think they're a crewmate</small></div>
+          <div class="toggle" id="knowsToggle">
+            <button data-k="1" class="on">Yes</button><button data-k="0">No</button>
+          </div>
+        </div>
+        <div class="row" id="count-row">
+          <div class="label">Tell imposters the count<small>Show imposters how many there are</small></div>
+          <div class="toggle" id="countToggle">
+            <button data-c="1" class="on">Yes</button><button data-c="0">No</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cta-bar"><button id="startBtn" class="btn">START GAME</button></div>
+  </section>
+
+  <!-- ============ REVEAL ============ -->
   <section id="screen-reveal" class="screen">
-    <div class="reveal-wrap">
+    <div class="topbar">
+      <button class="icon-btn round" id="revealBack" aria-label="Back">‹</button>
+      <span class="spacer"></span>
+      <span class="role-badge" id="rv-badge" style="visibility:hidden"></span>
+    </div>
+    <div class="scroll" style="display:flex;flex-direction:column">
       <div class="passto">Pass the phone to</div>
       <div class="pname" id="rv-name">Player 1</div>
       <div class="tapcard" id="rv-card">
         <div class="card-float">
-        <div class="flip-inner" id="rv-flip">
-          <div class="flip-face flip-front">
-            <div class="lock-badge">?</div>
-            <div class="front-caption">
-              <div class="hint-tap">Press &amp; hold to reveal</div>
-              <div class="hint-sub">Let go and it hides automatically</div>
+          <div class="flip-inner" id="rv-flip">
+            <div class="flip-face flip-front">
+              <div class="lock-badge">?</div>
+              <div class="front-caption">
+                <div class="hint-tap">Press &amp; hold to reveal</div>
+                <div class="hint-sub">Let go and it hides automatically</div>
+              </div>
+            </div>
+            <div class="flip-face flip-back">
+              <div id="rv-shown">
+                <div class="roletag" id="rv-roletag">Crewmate</div>
+                <div id="rv-body"></div>
+              </div>
             </div>
           </div>
-          <div class="flip-face flip-back">
-            <div id="rv-shown">
-              <div class="roletag" id="rv-roletag">Crewmate</div>
-              <div id="rv-body"></div>
-            </div>
-          </div>
-        </div>
         </div>
       </div>
       <div class="progress" id="rv-progress"></div>
-      <button id="rv-next" class="btn accent2 mt" style="display:none">Next player →</button>
     </div>
+    <div class="cta-bar"><button id="rv-next" class="btn" style="display:none">Next player →</button></div>
   </section>
 
-  <!-- ROUND COMPLETE -->
+  <!-- ============ ROUND COMPLETE ============ -->
   <section id="screen-round" class="screen">
-    <div class="reveal-wrap center">
-      <div class="emoji" style="font-size:46px">🎭</div>
+    <div class="topbar"><button class="icon-btn round" id="roundBack" aria-label="Back">‹</button><span class="spacer"></span></div>
+    <div class="scroll col-center">
+      <div class="emblem" style="width:98px;height:98px;margin:0 auto 4px"><img class="brand-logo" src="logo.png" alt=""></div>
       <h1>Everyone's in</h1>
       <p class="sub">Pass the phone back to the group. The player below gives the first clue, then go around the circle.</p>
-
       <div class="starter" id="rd-starter">
         <div class="starter-label">🎤 Goes first</div>
-        <div class="starter-name" id="rd-starter-name">—</div>
+        <div class="starter-name" id="rd-starter-name"></div>
       </div>
-
-      <div class="card" id="round-answer" style="display:none;text-align:left">
+      <div class="card" id="round-answer" style="display:none;text-align:left;width:100%">
         <p class="sub" style="margin:14px 0 2px">The secret word was</p>
-        <div class="result-word" id="rd-word" style="text-align:left;font-size:28px">—</div>
+        <div class="result-word" id="rd-word"></div>
         <h2 id="rd-imp-title" style="margin-top:14px">The imposter was…</h2>
         <div class="imp-list" id="rd-imps"></div>
       </div>
     </div>
-
-    <div class="mta">
-      <button id="rd-next" class="btn accent2 big">Next round →</button>
+    <div class="cta-bar">
+      <button id="rd-next" class="btn">Next round →</button>
       <div class="btnrow mt">
         <button id="rd-reveal" class="btn ghost">Reveal answer</button>
         <button id="rd-setup" class="btn ghost">Change setup</button>
@@ -348,7 +554,48 @@
     </div>
   </section>
 
-  <footer class="credit">© <span id="year">2026</span> <b>Dilip Adhikari</b> · All rights reserved</footer>
+  <!-- ============ BOTTOM TAB BAR ============ -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab active" data-tab="home"><span class="ti">🏠</span>Home</button>
+    <button class="tab" data-tab="mygames"><span class="ti">🎮</span>My Games</button>
+    <button class="tab create" data-tab="create"><span class="ti">＋</span></button>
+    <button class="tab" data-tab="stats"><span class="ti">📊</span>Stats</button>
+    <button class="tab" data-tab="profile"><span class="ti">👤</span>Profile</button>
+  </nav>
+</div>
+
+<!-- ============ SPLASH ============ -->
+<div class="sheet" id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+  <div class="sheet-inner">
+    <div class="emblem"><img class="brand-logo" src="logo.png" alt="Imposter logo"></div>
+    <div class="wordmark" id="intro-title">IMPOSTER</div>
+    <p class="tagline">Find the imposter <b>before it's too late.</b></p>
+    <button id="intro-ok" class="btn">Get started</button>
+    <p class="credit" style="margin-top:16px;font-size:12px">Designed by <b>Dilip Adhikari</b></p>
+  </div>
+</div>
+
+<!-- ============ HOW TO PLAY GUIDE ============ -->
+<div class="sheet" id="guide" role="dialog" aria-modal="true">
+  <div class="sheet-inner">
+    <div class="emblem" style="width:110px;height:110px;margin-bottom:10px"><img class="brand-logo" src="logo.png" alt=""></div>
+    <div class="wordmark" style="font-size:22px">HOW TO PLAY</div>
+    <p class="tagline">A pass-the-phone party game.</p>
+    <div class="how">
+      <div class="intro-step"><span class="intro-ic">🤫</span><span class="intro-tx">Everyone shares one <b>secret word</b>. The imposters get only a <b>hint</b>.</span></div>
+      <div class="intro-step"><span class="intro-ic">📱</span><span class="intro-tx"><b>Press and hold</b> your card to peek, let go to hide, then pass the phone on.</span></div>
+      <div class="intro-step"><span class="intro-ic">🗣️</span><span class="intro-tx">Give <b>clues</b>, talk it out, then decide together who the faker is.</span></div>
+    </div>
+    <button id="guide-ok" class="btn">Got it</button>
+  </div>
+</div>
+
+<!-- ============ CATEGORY PICKER ============ -->
+<div class="picker" id="catPicker">
+  <div class="picker-panel">
+    <div class="picker-head"><h2>Choose a category</h2><button class="icon-btn round" id="catClose" aria-label="Close">✕</button></div>
+    <div class="picker-list" id="cat-options"></div>
+  </div>
 </div>
 
 <script src="game.js"></script>
