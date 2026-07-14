@@ -400,6 +400,41 @@
       { word: "Mahabir Pun", hints: ["internet", "villages", "educator", "innovator", "Magsaysay", "tech"] },
       { word: "Anuradha Koirala", hints: ["Maiti Nepal", "social work", "women", "rescue", "CNN hero", "savior"] },
     ],
+    "🛺 Kathmandu Life": [
+      { word: "Load Shedding", hints: ["बत्ती गयो", "inverter", "candle light", "NEA", "andhyaro", "power cut"] },
+      { word: "Traffic Jam", hints: ["horn", "जाम", "New Road", "stuck", "arre late भयो", "bike weaving"] },
+      { word: "Safa Tempo", hints: ["green", "shared ride", "छ सिट", "Ratna Park", "electric", "three-wheel"] },
+      { word: "Momo Pasal", hints: ["steam", "achar", "queue", "jhol", "corner shop", "५ मिनेट पर्खनुस"] },
+      { word: "Bhatbhateni", hints: ["everything", "trolley", "किनमेल", "long billing", "one-stop", "AC inside"] },
+      { word: "Micro Bus", hints: ["khalasi", "भरियो भरियो", "shout route", "packed", "door open", "squeeze in"] },
+      { word: "Dashain Tika", hints: ["red rice", "टीका", "jamara", "elders", "dakshina", "blessing"] },
+      { word: "Load of Momo", hints: ["plate", "steamed", "buff or veg", "दश वटा", "achar dip", "share"] },
+    ],
+    "📱 Screens & Vibes": [
+      { word: "Selfie", hints: ["front cam", "pose", "फोटो", "best angle", "post गर्ने", "duck face"] },
+      { word: "Wifi Password", hints: ["guess", "पासवर्ड", "share गर", "slow", "sticky note", "please connect"] },
+      { word: "Group Chat", hints: ["notification", "मेसेज", "typing...", "mute गरे", "spam", "seen but silent"] },
+      { word: "Online Meeting", hints: ["you're on mute", "क्यामेरा off", "buffering", "Zoom", "screen share", "can you hear me"] },
+      { word: "Reels", hints: ["scroll", "नाच", "15 second", "viral", "loop", "just one more"] },
+      { word: "Low Battery", hints: ["1%", "चार्ज खोज", "power bank", "panic", "borrow cable", "red icon"] },
+      { word: "Screenshot", hints: ["capture", "स्क्रिनसट", "proof", "gallery full", "share गर्ने", "chat evidence"] },
+    ],
+    "🍜 Street Food": [
+      { word: "Pani Puri", hints: ["golgappa", "पानी", "crunch", "spicy water", "one more दिनुस", "roadside"] },
+      { word: "Sekuwa", hints: ["grill", "सेकुवा", "smoke", "evening treat", "skewer", "outing"] },
+      { word: "Laphing", hints: ["cold noodle", "चिसो", "spicy", "Tibetan", "rolled", "tangy"] },
+      { word: "Chatpate", hints: ["mix", "चटपटे", "puffed rice", "eat by hand", "tangy", "school gate"] },
+      { word: "Wai Wai", hints: ["चाउचाउ", "dry or soup", "masala packet", "anytime snack", "crunchy", "instant"] },
+      { word: "Sel Roti", hints: ["ring shape", "सेल रोटी", "sweet", "festive", "deep fried", "homemade"] },
+    ],
+    "🦸 Icons & Toons": [
+      { word: "Spiderman", hints: ["web", "मकुरा", "swing", "red and blue", "friendly neighbor", "New York"] },
+      { word: "Doraemon", hints: ["pocket", "robot बिरालो", "gadget", "Nobita", "from future", "blue"] },
+      { word: "Minion", hints: ["yellow", "banana", "gibberish", "goggles", "sano", "Gru's helper"] },
+      { word: "Batman", hints: ["night", "bat", "Gotham", "no powers", "the cave", "dark suit"] },
+      { word: "Chhota Bheem", hints: ["ladoo", "बलियो", "Dholakpur", "cartoon", "brave kid", "orange"] },
+      { word: "Tom and Jerry", hints: ["cat mouse", "chase", "बिरालो मुसा", "no dialogue", "classic", "trap"] },
+    ],
   };
 
   /* ---------- State ---------- */
@@ -414,7 +449,6 @@
   let round = null;                      // { word, roles, order }
   let reveal = { idx: 0, shown: false };
   let starterTimer = null;
-  let lastImp = null;
 
   let lobbies = [];      // saved player groups
   let activeId = null;   // lobby being set up / played
@@ -744,10 +778,8 @@
 
     const hints = shuffle(entry.hints.slice());
     const count = players.length;
-    let candidates = Array.from({ length: count }, (_, i) => i);
-    if (cfg.imposters === 1 && lastImp !== null && count > 2) candidates = candidates.filter((i) => i !== lastImp);
-    const chosen = shuffle(candidates).slice(0, cfg.imposters);
-    lastImp = cfg.imposters === 1 ? chosen[0] : null;
+    // Fully random imposters every round: uniform, unbiased, no "avoid last time".
+    const chosen = shuffle(Array.from({ length: count }, (_, i) => i)).slice(0, cfg.imposters);
     const impSet = new Set(chosen);
 
     const roles = [];
