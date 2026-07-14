@@ -150,14 +150,14 @@
   .welcome-sm{color:var(--mut);font-size:14px;font-weight:500}
   .welcome-lg{display:flex;align-items:center;gap:8px;font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
   .welcome-lg .dot{width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
-  .hero{position:relative;overflow:hidden;border-radius:24px;padding:22px 20px;margin-top:4px;min-height:158px;
-    background:var(--hero-grad);box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center;cursor:pointer}
+  .hero{position:relative;overflow:hidden;border-radius:24px;padding:22px 20px;margin-top:4px;min-height:118px;
+    background:var(--hero-grad);box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer}
   .hero:active{filter:brightness(1.05)}
   .hero-eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-sub);margin-bottom:5px}
   .hero-title{font-size:31px;font-weight:800;letter-spacing:-.02em;color:var(--hero-tx);line-height:1}
   .hero-desc{font-size:13.5px;color:var(--hero-sub);margin:7px 0 16px}
-  .hero-btn{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--acc);
-    font-weight:800;font-size:15px;padding:12px 20px;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+  .hero-btn{display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--acc);
+    font-weight:800;font-size:16px;padding:14px 30px;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,.2)}
   .hero-art{position:absolute;right:-14px;bottom:-16px;width:158px;height:158px;pointer-events:none;
     filter:drop-shadow(0 6px 18px rgba(0,0,0,.28))}
   .sec-head{display:flex;align-items:center;justify-content:space-between;margin:24px 2px 12px}
@@ -191,6 +191,7 @@
   .tab{flex:1;border:0;background:none;color:var(--mut);font-family:inherit;font-size:10px;font-weight:600;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0}
   .tab .ti{font-size:19px;line-height:1}
+  .tab-svg{width:21px;height:21px;display:block}
   .tab[data-tab="home"] .ti{color:var(--c-teal)}
   .tab[data-tab="mygames"] .ti{color:var(--c-purple)}
   .tab[data-tab="stats"] .ti{color:var(--c-gold)}
@@ -461,6 +462,11 @@
     <path class="mask-eye" d="M35 57 57 49 57 62 35 62Z"/>
     <path class="mask-eye" d="M85 57 63 49 63 62 85 62Z"/>
   </symbol>
+  <symbol id="ic-stats" viewBox="0 0 24 24">
+    <rect x="3" y="11.5" width="4.4" height="8.5" rx="1.6" fill="currentColor"/>
+    <rect x="9.8" y="6.5" width="4.4" height="13.5" rx="1.6" fill="currentColor"/>
+    <rect x="16.6" y="2.5" width="4.4" height="17.5" rx="1.6" fill="currentColor"/>
+  </symbol>
 </svg>
 
 <div class="app">
@@ -481,9 +487,6 @@
       </div>
 
       <div class="hero" id="quickPlay">
-        <div class="hero-eyebrow">Ready to play?</div>
-        <div class="hero-title">Quick Match</div>
-        <div class="hero-desc">Join a random game instantly</div>
         <span class="hero-btn">▶ Play now</span>
       </div>
 
@@ -688,7 +691,7 @@
     <button class="tab active" data-tab="home"><span class="ti">🏠</span>Home</button>
     <button class="tab" data-tab="mygames"><span class="ti">🎮</span>My Games</button>
     <button class="tab create" data-tab="create"><span class="ti">＋</span></button>
-    <button class="tab" data-tab="stats"><span class="ti">📊</span>Stats</button>
+    <button class="tab" data-tab="stats"><span class="ti"><svg class="tab-svg"><use href="#ic-stats"/></svg></span>Stats</button>
     <button class="tab" data-tab="profile"><span class="ti">👤</span>Profile</button>
   </nav>
 </div>
