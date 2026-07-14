@@ -503,27 +503,34 @@
     return `rgb(${c(0)},${c(2)},${c(4)})`;
   }
   // Every lobby card opens Game Setup; the pencil is the explicit edit affordance.
-  function lobbyEl(l) {
+  function lobbyEl(l, manage) {
     const n = l.players.length, im = Math.min(l.cfg.imposters, Math.max(1, Math.floor(n / 2)));
     const el = document.createElement("div");
     el.className = "lobby";
     el.innerHTML =
       `<span class="lobby-av" style="background:linear-gradient(135deg,${shade(l.color, 0.12)},${shade(l.color, -0.14)});color:#fff">${l.emoji || "👥"}</span>` +
-      `<span style="min-width:0"><span class="lobby-nm">${escapeHtml(l.name)}</span>` +
+      `<span style="min-width:0;flex:1"><span class="lobby-nm">${escapeHtml(l.name)}</span>` +
       `<span class="lobby-meta"><span>${n} Players</span><span class="imp">${im} Imposter${im > 1 ? "s" : ""}</span></span></span>` +
+      (manage ? `<button class="lobby-del" aria-label="Delete lobby">🗑</button>` : "") +
       `<button class="lobby-edit" aria-label="Edit lobby">✎</button>` +
       `<span class="lobby-go">›</span>`;
     el.querySelector(".lobby-edit").addEventListener("click", (e) => { e.stopPropagation(); openEditor(l.id, "mygames"); });
+    if (manage) el.querySelector(".lobby-del").addEventListener("click", (e) => {
+      e.stopPropagation();
+      askConfirm(`Delete "${l.name}"?`, "The lobby and its players will be removed. This can't be undone.", "Delete", () => {
+        lobbies = lobbies.filter((x) => x.id !== l.id); saveLobbies(); renderMyGames(); renderHome();
+      });
+    });
     el.addEventListener("click", () => openSetup(l.id));
     return el;
   }
-  function fillList(container) {
+  function fillList(container, manage) {
     container.innerHTML = "";
     if (!lobbies.length) { container.innerHTML = `<div class="empty">No lobbies yet. Tap the ＋ tab to create one.</div>`; return; }
-    lobbies.forEach((l) => container.appendChild(lobbyEl(l)));
+    lobbies.forEach((l) => container.appendChild(lobbyEl(l, manage)));
   }
-  function renderHome() { fillList($("lobby-list")); }
-  function renderMyGames() { fillList($("mygames-list")); }
+  function renderHome() { fillList($("lobby-list"), false); }
+  function renderMyGames() { fillList($("mygames-list"), true); }
   function renderStats() {
     const n = roundsPlayed();
     $("stat-rounds").textContent = n;

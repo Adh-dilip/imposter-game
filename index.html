@@ -111,6 +111,12 @@
   }
   .app{flex:1;display:flex;flex-direction:column;max-width:480px;width:100%;margin:0 auto;min-height:0;position:relative}
 
+  /* warm-theme scenery */
+  .scenery{display:none}
+  [data-theme="warm"] .scenery{display:block;position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .sc-top{position:absolute;top:0;left:0;width:100%;height:240px}
+  .sc-bottom{position:absolute;bottom:0;left:0;width:100%;height:140px}
+
   .mask{width:100%;height:100%;display:block}
   .mask-eye{fill:var(--eye)}
 
@@ -150,16 +156,24 @@
   .welcome-sm{color:var(--mut);font-size:14px;font-weight:500}
   .welcome-lg{display:flex;align-items:center;gap:8px;font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
   .welcome-lg .dot{width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
-  .hero{position:relative;overflow:hidden;border-radius:24px;padding:22px 20px;margin-top:4px;min-height:118px;
-    background:var(--hero-grad);box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer}
-  .hero:active{filter:brightness(1.05)}
-  .hero-eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-sub);margin-bottom:5px}
-  .hero-title{font-size:31px;font-weight:800;letter-spacing:-.02em;color:var(--hero-tx);line-height:1}
-  .hero-desc{font-size:13.5px;color:var(--hero-sub);margin:7px 0 16px}
-  .hero-btn{display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--acc);
-    font-weight:800;font-size:16px;padding:14px 30px;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,.2)}
-  .hero-art{position:absolute;right:-14px;bottom:-16px;width:158px;height:158px;pointer-events:none;
-    filter:drop-shadow(0 6px 18px rgba(0,0,0,.28))}
+  /* Cinematic Play hero — the whole card is the button */
+  .hero{position:relative;overflow:hidden;border-radius:24px;padding:26px 20px;margin-top:6px;min-height:212px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;box-shadow:var(--shadow);
+    background:var(--hero-grad);background-size:220% 220%;animation:heroShift 9s ease-in-out infinite}
+  .hero:active{transform:scale(.99)}
+  @keyframes heroShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  .hero::before{content:"";position:absolute;top:0;bottom:0;width:38%;left:-60%;pointer-events:none;z-index:0;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);animation:heroShimmer 5s ease-in-out infinite}
+  @keyframes heroShimmer{0%{left:-60%}55%,100%{left:150%}}
+  .hero::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(circle at 50% 36%,rgba(255,255,255,.16),transparent 62%)}
+  .hero-logo{width:90px;height:90px;position:relative;z-index:1;animation:heroFloat 4.5s ease-in-out infinite;
+    filter:drop-shadow(0 6px 18px rgba(0,0,0,.32))}
+  @keyframes heroFloat{0%,100%{transform:translateY(-4px)}50%{transform:translateY(4px)}}
+  .hero-cta{position:relative;z-index:1;font-size:28px;font-weight:800;color:#fff;letter-spacing:.03em;
+    text-shadow:0 2px 14px rgba(0,0,0,.3);animation:ctaPulse 2.2s ease-in-out infinite}
+  @keyframes ctaPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  .hero-hint{position:relative;z-index:1;font-size:12.5px;color:var(--hero-sub);font-weight:600}
   .sec-head{display:flex;align-items:center;justify-content:space-between;margin:24px 2px 12px}
   .sec-head span{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
   .lobby{width:100%;display:flex;align-items:center;gap:13px;text-align:left;border:1px solid var(--line);background:var(--card);
@@ -424,9 +438,10 @@
   .link-btn:active{color:var(--tx)}
 
   /* pencil edit affordance on lobby cards */
-  .lobby-edit{margin-left:auto;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card-2);
+  .lobby-edit,.lobby-del{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card-2);
     color:var(--mut);font-size:14px;display:grid;place-items:center;flex:none}
   .lobby-edit:active{color:var(--acc-2);border-color:var(--acc)}
+  .lobby-del:active{color:var(--danger);border-color:var(--danger);background:rgba(239,59,84,.12)}
   .lobby-go{color:var(--mut);font-size:20px;flex:none;padding-left:2px}
 
   /* nicer empty states */
@@ -471,6 +486,26 @@
 
 <div class="app">
 
+  <!-- warm-theme decorative scenery (mountains, sun, pines) -->
+  <div class="scenery" aria-hidden="true">
+    <svg class="sc-top" viewBox="0 0 400 240" preserveAspectRatio="xMidYMin slice">
+      <circle cx="336" cy="60" r="40" fill="#f4c95a" opacity=".5"/>
+      <circle cx="336" cy="60" r="26" fill="#f6d270" opacity=".7"/>
+      <path d="M60 66 q10 -8 20 0 M300 44 q10 -8 20 0" fill="none" stroke="#9db9ad" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+      <path d="M0 240 L0 150 Q70 96 150 140 T400 128 L400 240Z" fill="#cfe6d8"/>
+      <path d="M0 240 L0 180 Q95 128 190 170 T400 158 L400 240Z" fill="#9ed3ba"/>
+      <path d="M-20 240 L-20 205 Q120 158 250 192 T430 182 L430 240Z" fill="#63b89d"/>
+    </svg>
+    <svg class="sc-bottom" viewBox="0 0 400 140" preserveAspectRatio="xMidYMax slice">
+      <g fill="#2f8168">
+        <path d="M36 108 l16 34 h-32 Z"/><path d="M36 90 l14 30 h-28 Z"/><path d="M36 74 l12 26 h-24 Z"/><rect x="33" y="140" width="6" height="0"/>
+        <path d="M364 112 l16 34 h-32 Z"/><path d="M364 96 l14 30 h-28 Z"/><path d="M364 80 l12 26 h-24 Z"/>
+      </g>
+      <path d="M0 140 L0 74 Q110 42 210 66 T400 56 L400 140Z" fill="#7cc3a8" opacity=".65"/>
+      <path d="M0 140 L0 96 Q120 70 250 90 T430 84 L430 140Z" fill="#3f9d80"/>
+    </svg>
+  </div>
+
   <!-- ============ HOME ============ -->
   <section id="screen-home" class="screen">
     <div class="topbar">
@@ -487,7 +522,9 @@
       </div>
 
       <div class="hero" id="quickPlay">
-        <span class="hero-btn">▶ Play now</span>
+        <img class="hero-logo" src="logo.png" alt="">
+        <div class="hero-cta">▶ PLAY NOW</div>
+        <div class="hero-hint">Tap to start a quick match</div>
       </div>
 
       <div class="sec-head"><span>Your lobbies</span><button class="link" id="seeAll">See all</button></div>
