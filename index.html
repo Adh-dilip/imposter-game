@@ -12,18 +12,22 @@
 <title>Imposter Word Game</title>
 <script>
   /* apply saved theme before paint to avoid a flash; default dark */
-  (function(){try{var t=localStorage.getItem('imposter_theme');if(t!=='light'&&t!=='dark')t='dark';
+  (function(){try{var t=localStorage.getItem('imposter_theme');if(['light','dark','warm'].indexOf(t)<0)t='dark';
     document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
 </script>
 <style>
   :root{
-    --page:#0a0a0f;
-    --card:#14151d;
-    --card-2:#1a1b25;
-    --line:rgba(255,255,255,.07);
-    --line-2:rgba(255,255,255,.13);
+    /* vibrant accents shared across every theme (steps + tabs) */
+    --c-teal:#1fbf9c; --c-gold:#f2a93b; --c-coral:#f0603f; --c-blue:#4b9bff; --c-purple:#8b7bff; --c-green:#2bc07d;
+
+    /* ===== Dark (default) ===== */
+    --page:#0b0b14;
+    --card:#15161f;
+    --card-2:#1c1d28;
+    --line:rgba(255,255,255,.08);
+    --line-2:rgba(255,255,255,.14);
     --tx:#f4f5fa;
-    --mut:#8b90a6;
+    --mut:#9298af;
     --ph:#565b70;
     --acc:#6d5df6;
     --acc-2:#8b7bff;
@@ -35,19 +39,48 @@
     --gold:#f5b83d;
     --shadow:0 12px 34px rgba(0,0,0,.45);
     --shadow-sm:0 6px 18px rgba(0,0,0,.4);
-    --glow-top:rgba(109,93,246,.16);
-    --tabbar-bg:rgba(14,15,21,.86);
+    --glow-top:rgba(109,93,246,.20);
+    --tabbar-bg:rgba(15,16,24,.9);
     --eye:#ffffff;
+    --hero-grad:linear-gradient(120deg,#5b3fb0 0%,#b0417a 55%,#e8873f 100%);
+    --hero-tx:#ffffff;
+    --hero-sub:rgba(255,255,255,.82);
     --tabh:66px;
   }
+  [data-theme="warm"]{
+    --page:#f3ecd9;
+    --card:#fffdf6;
+    --card-2:#f6efdf;
+    --line:rgba(60,50,30,.10);
+    --line-2:rgba(60,50,30,.18);
+    --tx:#2c2617;
+    --mut:#7c715b;
+    --ph:#a99f88;
+    --acc:#ef9a2e;
+    --acc-2:#18957c;
+    --acc-glow:rgba(239,154,46,.32);
+    --good:#18957c;
+    --good-glow:rgba(24,149,124,.22);
+    --danger:#e2593a;
+    --danger-glow:rgba(226,89,58,.24);
+    --gold:#d99a1c;
+    --shadow:0 12px 30px rgba(90,70,30,.12);
+    --shadow-sm:0 6px 16px rgba(90,70,30,.10);
+    --glow-top:rgba(24,149,124,.10);
+    --tabbar-bg:rgba(216,232,223,.92);
+    --eye:#1f1a10;
+    --hero-grad:linear-gradient(135deg,#1f7d6e 0%,#2fa389 100%);
+    --hero-tx:#ffffff;
+    --hero-sub:rgba(255,255,255,.86);
+  }
   [data-theme="light"]{
-    --page:#eceef5;
+    --page:#eef0f6;
     --card:#ffffff;
-    --card-2:#f2f3f9;
+    --card-2:#f4f5fa;
     --line:rgba(24,27,45,.09);
     --line-2:rgba(24,27,45,.16);
     --tx:#1b1d2b;
-    --mut:#6b7188;
+    --mut:#5d6478;
     --ph:#a3a7b8;
     --acc:#6d5df6;
     --acc-2:#5a46e6;
@@ -59,9 +92,12 @@
     --gold:#d99a1c;
     --shadow:0 12px 30px rgba(30,35,80,.10);
     --shadow-sm:0 6px 16px rgba(30,35,80,.08);
-    --glow-top:rgba(109,93,246,.11);
-    --tabbar-bg:rgba(255,255,255,.85);
+    --glow-top:rgba(109,93,246,.10);
+    --tabbar-bg:rgba(255,255,255,.9);
     --eye:#1b1d2b;
+    --hero-grad:linear-gradient(120deg,#5b8def 0%,#8b5cf6 100%);
+    --hero-tx:#ffffff;
+    --hero-sub:rgba(255,255,255,.9);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
@@ -88,7 +124,10 @@
 
   /* ---------- Top bars ---------- */
   .topbar{display:flex;align-items:center;gap:10px;padding:12px 18px 6px;flex-shrink:0}
-  .topbar .logo{font-weight:800;font-size:17px;letter-spacing:.24em;color:var(--tx);padding-left:.24em}
+  .topbar .logo{font-weight:800;font-size:17px;letter-spacing:.24em;color:var(--tx);padding-left:.24em;display:inline-flex;align-items:center}
+  .logo-o{display:inline-grid;place-items:center;width:.78em;height:.78em;color:var(--acc-2);margin:0 .04em}
+  .avatar{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-2);background:var(--card);padding:2px;flex:none;cursor:pointer;overflow:hidden}
+  .avatar .brand-logo{width:100%;height:100%}
   .topbar .title{font-weight:700;font-size:16px;letter-spacing:-.01em}
   .spacer{flex:1}
   .icon-btn{min-width:40px;height:40px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--mut);
@@ -111,13 +150,16 @@
   .welcome-sm{color:var(--mut);font-size:14px;font-weight:500}
   .welcome-lg{display:flex;align-items:center;gap:8px;font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
   .welcome-lg .dot{width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
-  .quickplay{width:100%;display:flex;align-items:center;gap:14px;text-align:left;border:1px solid var(--line);
-    background:linear-gradient(120deg,var(--card-2),var(--card));border-radius:20px;padding:18px;cursor:pointer;box-shadow:var(--shadow)}
-  .quickplay:active{filter:brightness(1.06)}
-  .qp-t{font-size:15px;font-weight:700;letter-spacing:.02em}
-  .qp-s{font-size:13px;color:var(--mut);margin-top:3px}
-  .qp-btn{margin-left:auto;width:52px;height:52px;border-radius:16px;background:var(--acc);display:grid;place-items:center;color:#fff;font-size:18px;
-    box-shadow:0 10px 26px var(--acc-glow);flex:none}
+  .hero{position:relative;overflow:hidden;border-radius:24px;padding:22px 20px;margin-top:4px;min-height:158px;
+    background:var(--hero-grad);box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center;cursor:pointer}
+  .hero:active{filter:brightness(1.05)}
+  .hero-eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-sub);margin-bottom:5px}
+  .hero-title{font-size:31px;font-weight:800;letter-spacing:-.02em;color:var(--hero-tx);line-height:1}
+  .hero-desc{font-size:13.5px;color:var(--hero-sub);margin:7px 0 15px;max-width:58%}
+  .hero-btn{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--acc);
+    font-weight:800;font-size:15px;padding:12px 20px;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+  .hero-art{position:absolute;right:-14px;bottom:-16px;width:158px;height:158px;pointer-events:none;
+    filter:drop-shadow(0 6px 18px rgba(0,0,0,.28))}
   .sec-head{display:flex;align-items:center;justify-content:space-between;margin:24px 2px 12px}
   .sec-head span{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
   .lobby{width:100%;display:flex;align-items:center;gap:13px;text-align:left;border:1px solid var(--line);background:var(--card);
@@ -130,12 +172,17 @@
   .lobby-chev{margin-left:auto;color:var(--mut);font-size:20px;flex:none}
   .empty{border:1px dashed var(--line-2);border-radius:18px;padding:26px 18px;text-align:center;color:var(--mut);font-size:13.5px}
 
-  /* how-to steps strip */
-  .steps{display:flex;justify-content:space-between;gap:8px;margin-top:4px}
-  .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;position:relative}
-  .step-ic{width:52px;height:52px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:22px;color:var(--acc-2)}
-  .step-n{font-size:11px;font-weight:700;color:var(--acc-2)}
-  .step-lb{font-size:11.5px;color:var(--mut);line-height:1.3;font-weight:600}
+  /* how-it-works steps */
+  .steps{display:flex;align-items:flex-start;gap:4px}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+  .step-n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+  .step-ic{font-size:23px;line-height:1}
+  .step-lb{font-size:11.5px;color:var(--tx);line-height:1.25;font-weight:700}
+  .step-sub{font-size:10px;color:var(--mut);line-height:1.2}
+  .step:nth-child(1) .step-n{background:var(--c-teal)}
+  .step:nth-child(3) .step-n{background:var(--c-gold)}
+  .step:nth-child(5) .step-n{background:var(--c-coral)}
+  .step-sep{align-self:center;color:var(--mut);font-size:15px;margin-top:12px;flex:none}
 
   /* ---------- Bottom tab bar ---------- */
   .tabbar{position:absolute;left:0;right:0;bottom:0;height:calc(var(--tabh) + env(safe-area-inset-bottom));
@@ -145,9 +192,18 @@
   .tab{flex:1;border:0;background:none;color:var(--mut);font-family:inherit;font-size:10px;font-weight:600;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0}
   .tab .ti{font-size:19px;line-height:1}
+  .tab[data-tab="home"] .ti{color:var(--c-teal)}
+  .tab[data-tab="mygames"] .ti{color:var(--c-purple)}
+  .tab[data-tab="stats"] .ti{color:var(--c-gold)}
+  .tab[data-tab="profile"] .ti{color:var(--c-blue)}
+  .tab[data-tab="home"].active{color:var(--c-teal)}
+  .tab[data-tab="mygames"].active{color:var(--c-purple)}
+  .tab[data-tab="stats"].active{color:var(--c-gold)}
+  .tab[data-tab="profile"].active{color:var(--c-blue)}
   .tab.active{color:var(--acc-2)}
-  .tab.create .ti{width:44px;height:44px;margin-top:-16px;border-radius:16px;background:var(--acc);color:#fff;display:grid;place-items:center;
-    font-size:26px;font-weight:400;box-shadow:0 8px 22px var(--acc-glow)}
+  .tab.create .ti{width:48px;height:48px;margin-top:-18px;border-radius:50%;color:#fff;display:grid;place-items:center;
+    font-size:27px;font-weight:400;background:linear-gradient(135deg,var(--c-coral),var(--acc));box-shadow:0 8px 22px var(--acc-glow)}
+  .tab.create.active{color:var(--acc-2)}
 
   /* ---------- Cards / rows (shared) ---------- */
   .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:4px 18px;box-shadow:var(--shadow)}
@@ -329,6 +385,69 @@
   .picker-opt.sel{color:var(--acc-2)}
   .picker-opt .ck{color:var(--acc-2);font-weight:700}
 
+  /* ---------- Hamburger drawer ---------- */
+  .drawer{position:fixed;inset:0;z-index:70;display:none}
+  .drawer.show{display:block}
+  .drawer-scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);animation:introFade .2s ease}
+  .drawer-panel{position:absolute;top:0;left:0;bottom:0;width:84%;max-width:330px;background:var(--card);border-right:1px solid var(--line);
+    padding:calc(22px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;
+    animation:drawerIn .28s cubic-bezier(.2,.8,.2,1);overflow-y:auto}
+  @keyframes drawerIn{from{transform:translateX(-100%)}to{transform:none}}
+  .drawer-brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .drawer-brand .logo{font-weight:800;font-size:16px;letter-spacing:.22em}
+  .drawer h3{margin:16px 4px 9px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:800}
+  .drawer-item{display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:12px;border:0;background:none;color:var(--tx);
+    font-family:inherit;font-size:15px;font-weight:600;text-align:left;cursor:pointer;width:100%}
+  .drawer-item:active{background:var(--card-2)}
+  .theme-swatches{display:flex;gap:9px}
+  .swatch{flex:1;border:1px solid var(--line-2);border-radius:14px;padding:9px 5px 8px;cursor:pointer;background:var(--card-2);
+    display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--tx);font-family:inherit}
+  .swatch.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+  .swatch-dot{width:100%;height:32px;border-radius:9px}
+
+  /* ---------- Confirm dialog ---------- */
+  .dialog{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:28px;background:rgba(0,0,0,.55);animation:introFade .2s ease}
+  .dialog.show{display:flex}
+  .dialog-box{width:100%;max-width:340px;background:var(--card);border:1px solid var(--line-2);border-radius:22px;padding:24px 22px;box-shadow:var(--shadow);animation:popin .3s both;text-align:center}
+  .dialog-box h2{font-size:19px;margin:0 0 6px}
+  .dialog-box p{color:var(--mut);font-size:14px;line-height:1.5;margin:0 0 20px}
+  .dialog-row{display:flex;gap:12px}
+  .dialog-row .btn{margin:0}
+
+  /* validation hint */
+  .field-hint{color:var(--danger);font-size:12px;font-weight:600;margin:2px 2px 0;min-height:15px}
+  .name-input.invalid{color:var(--danger)}
+
+  /* de-emphasised secondary action (reveal answer) */
+  .link-btn{border:0;background:none;color:var(--mut);font-family:inherit;font-size:13px;font-weight:600;
+    text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:10px;display:block;margin:2px auto 0}
+  .link-btn:active{color:var(--tx)}
+
+  /* pencil edit affordance on lobby cards */
+  .lobby-edit{margin-left:auto;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card-2);
+    color:var(--mut);font-size:14px;display:grid;place-items:center;flex:none}
+  .lobby-edit:active{color:var(--acc-2);border-color:var(--acc)}
+  .lobby-go{color:var(--mut);font-size:20px;flex:none;padding-left:2px}
+
+  /* nicer empty states */
+  .placeholder .pic{background:var(--card);border:1px solid var(--line)}
+  .stat-tiles{display:flex;gap:12px;margin-top:6px}
+  .stat-tile{flex:1;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 14px;text-align:center;box-shadow:var(--shadow-sm)}
+  .stat-num{font-size:32px;font-weight:800;letter-spacing:-.02em}
+  .stat-lbl{font-size:12px;color:var(--mut);margin-top:2px;font-weight:600}
+  .badge-num{background:var(--card-2);border:1px solid var(--line);color:var(--tx);font-weight:800;font-size:14px;padding:4px 12px;border-radius:999px}
+  .rowbtn{width:100%;border:0;background:none;font-family:inherit;cursor:pointer}
+  .rowbtn:active{background:var(--card-2)}
+  .sheet-close{position:absolute;top:calc(16px + env(safe-area-inset-top));right:18px;z-index:2}
+
+  /* desktop: keep the app column centred with a soft frame */
+  @media (min-width:620px){
+    body{padding-top:0}
+    .app{max-width:440px;margin:0 auto;height:100dvh;max-height:920px;align-self:center;
+      border:1px solid var(--line);border-radius:28px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+    body{align-items:center;justify-content:center}
+  }
+
   @media (prefers-reduced-motion: reduce){
     .card-float,.lock-badge::before{animation:none}
     .screen,.sheet,.sheet-inner,.picker-panel{animation:none}
@@ -352,9 +471,9 @@
     <div class="topbar">
       <button class="icon-btn round" id="menuBtn" aria-label="Menu">☰</button>
       <span class="spacer"></span>
-      <span class="logo">IMPOSTER</span>
+      <span class="logo">IMP<span class="logo-o"><svg class="mask"><use href="#ic-mask"/></svg></span>STER</span>
       <span class="spacer"></span>
-      <button class="icon-btn round" id="crownBtn" aria-label="Toggle light or dark theme">🌙</button>
+      <button class="avatar" id="avatarBtn" aria-label="Profile"><img class="brand-logo" src="logo.png" alt=""></button>
     </div>
     <div class="scroll tabbed">
       <div class="welcome">
@@ -362,24 +481,28 @@
         <div class="welcome-lg">Crewmate <i class="dot"></i></div>
       </div>
 
-      <button class="quickplay" id="quickPlay">
-        <div>
-          <div class="qp-t">QUICK PLAY</div>
-          <div class="qp-s">Play a random game</div>
-        </div>
-        <span class="qp-btn">▶</span>
-      </button>
+      <div class="hero" id="quickPlay">
+        <div class="hero-eyebrow">Ready to play?</div>
+        <div class="hero-title">Quick Match</div>
+        <div class="hero-desc">Join a random game instantly</div>
+        <span class="hero-btn">▶ Play now</span>
+        <img class="hero-art" src="logo.png" alt="">
+      </div>
 
       <div class="sec-head"><span>Your lobbies</span><button class="link" id="seeAll">See all</button></div>
       <div id="lobby-list"></div>
 
-      <div class="sec-head"><span>How to play</span><button class="link" id="viewGuide">View guide</button></div>
-      <div class="steps">
-        <div class="step"><div class="step-ic">👥</div><div class="step-n">1</div><div class="step-lb">Gather players</div></div>
-        <div class="step"><div class="step-ic">🃏</div><div class="step-n">2</div><div class="step-lb">Choose words</div></div>
-        <div class="step"><div class="step-ic">🕵️</div><div class="step-n">3</div><div class="step-lb">Find the imposter</div></div>
+      <div class="sec-head"><span>How it works</span><button class="link" id="viewGuide">View guide</button></div>
+      <div class="card" style="padding:16px 12px">
+        <div class="steps">
+          <div class="step"><div class="step-n">01</div><div class="step-ic">👥</div><div class="step-lb">Gather players</div><div class="step-sub">Invite friends</div></div>
+          <div class="step-sep">›</div>
+          <div class="step"><div class="step-n">02</div><div class="step-ic">📝</div><div class="step-lb">Choose a word</div><div class="step-sub">Pick to guess</div></div>
+          <div class="step-sep">›</div>
+          <div class="step"><div class="step-n">03</div><div class="step-ic">🕵️</div><div class="step-lb">Find imposter</div><div class="step-sub">Spot the faker</div></div>
+        </div>
       </div>
-      <p class="credit" style="margin-top:26px">Designed by <b>Dilip Adhikari</b></p>
+      <p class="credit" style="margin-top:22px">Designed by <b>Dilip Adhikari</b></p>
     </div>
   </section>
 
@@ -396,10 +519,14 @@
   <section id="screen-stats" class="screen">
     <div class="topbar"><span class="title">Stats</span></div>
     <div class="scroll tabbed">
-      <div class="placeholder">
+      <div class="stat-tiles">
+        <div class="stat-tile"><div class="stat-num" id="stat-rounds" style="color:var(--c-teal)">0</div><div class="stat-lbl">Rounds played</div></div>
+        <div class="stat-tile"><div class="stat-num" id="stat-lobbies" style="color:var(--c-purple)">0</div><div class="stat-lbl">Saved lobbies</div></div>
+      </div>
+      <div class="placeholder" style="padding:34px 30px">
         <div class="pic">📊</div>
-        <h2>Rounds played</h2>
-        <p id="stats-count">You've played 0 rounds so far. Play a game and your stats will show up here.</p>
+        <h2>Keep them guessing</h2>
+        <p id="stats-count">Play a game and your history builds up here.</p>
       </div>
     </div>
   </section>
@@ -407,13 +534,16 @@
   <!-- ============ PROFILE ============ -->
   <section id="screen-profile" class="screen">
     <div class="topbar"><span class="title">Profile</span></div>
-    <div class="scroll tabbed">
-      <div class="placeholder">
-        <div class="pic">🕵️</div>
-        <h2>Crewmate</h2>
-        <p>Your local profile. Accounts and sync are coming later. For now everything stays on this device.</p>
+    <div class="scroll tabbed col-center">
+      <div class="emblem" style="width:96px;height:96px;margin:14px auto 8px"><img class="brand-logo" src="logo.png" alt=""></div>
+      <h1 style="margin-bottom:2px">Crewmate</h1>
+      <p class="sub" style="margin-bottom:18px">Local profile on this device</p>
+      <div class="card" style="width:100%;text-align:left">
+        <div class="row"><div class="label">Rounds played</div><span class="badge-num" id="prof-rounds">0</span></div>
+        <button class="row rowbtn" id="profTheme"><div class="label">Appearance<small>Switch color theme</small></div><span class="lobby-go">›</span></button>
+        <button class="row rowbtn" id="profGuide"><div class="label">How to play</div><span class="lobby-go">›</span></button>
       </div>
-      <p class="credit" style="margin-top:20px">© <span id="year">2026</span> <b>Dilip Adhikari</b> · All rights reserved</p>
+      <p class="credit" style="margin-top:18px">© <span id="year">2026</span> <b>Dilip Adhikari</b> · All rights reserved</p>
     </div>
   </section>
 
@@ -431,6 +561,7 @@
           <div class="emoji-pick" id="emoji-pick"></div>
         </div>
         <div class="name-row" style="border:0"><input class="name-input" id="lobby-name" placeholder="Lobby name" maxlength="22" style="font-size:17px;font-weight:700"></div>
+        <p class="field-hint" id="lobby-name-hint"></p>
       </div>
 
       <div class="card players-card">
@@ -548,9 +679,9 @@
     <div class="cta-bar">
       <button id="rd-next" class="btn">Next round →</button>
       <div class="btnrow mt">
-        <button id="rd-reveal" class="btn ghost">Reveal answer</button>
         <button id="rd-setup" class="btn ghost">Change setup</button>
       </div>
+      <button id="rd-reveal" class="link-btn">Reveal answer (spoiler)</button>
     </div>
   </section>
 
@@ -577,6 +708,7 @@
 
 <!-- ============ HOW TO PLAY GUIDE ============ -->
 <div class="sheet" id="guide" role="dialog" aria-modal="true">
+  <button class="icon-btn round sheet-close" id="guide-close" aria-label="Close">✕</button>
   <div class="sheet-inner">
     <div class="emblem" style="width:110px;height:110px;margin-bottom:10px"><img class="brand-logo" src="logo.png" alt=""></div>
     <div class="wordmark" style="font-size:22px">HOW TO PLAY</div>
@@ -587,6 +719,42 @@
       <div class="intro-step"><span class="intro-ic">🗣️</span><span class="intro-tx">Give <b>clues</b>, talk it out, then decide together who the faker is.</span></div>
     </div>
     <button id="guide-ok" class="btn">Got it</button>
+  </div>
+</div>
+
+<!-- ============ HAMBURGER DRAWER ============ -->
+<div class="drawer" id="drawer">
+  <div class="drawer-scrim" data-close-drawer></div>
+  <div class="drawer-panel">
+    <div class="drawer-brand">
+      <span class="avatar" style="cursor:default"><img class="brand-logo" src="logo.png" alt=""></span>
+      <span class="logo">IMP<span class="logo-o"><svg class="mask"><use href="#ic-mask"/></svg></span>STER</span>
+      <span class="spacer"></span>
+      <button class="icon-btn round" id="drawer-close" aria-label="Close">✕</button>
+    </div>
+    <h3>Appearance</h3>
+    <div class="theme-swatches" id="themeSwatches">
+      <button class="swatch" data-theme-pick="dark"><span class="swatch-dot" style="background:linear-gradient(120deg,#5b3fb0,#b0417a,#e8873f)"></span>Dark</button>
+      <button class="swatch" data-theme-pick="warm"><span class="swatch-dot" style="background:linear-gradient(135deg,#1f7d6e,#2fa389,#f0a83c)"></span>Warm</button>
+      <button class="swatch" data-theme-pick="light"><span class="swatch-dot" style="background:linear-gradient(120deg,#5b8def,#8b5cf6)"></span>Light</button>
+    </div>
+    <h3>Game</h3>
+    <button class="drawer-item" id="drawerNew">➕&nbsp; New lobby</button>
+    <button class="drawer-item" id="drawerGuide">📖&nbsp; How to play</button>
+    <span class="spacer" style="flex:1"></span>
+    <p class="credit" style="text-align:left;padding:6px 4px">Designed by <b>Dilip Adhikari</b></p>
+  </div>
+</div>
+
+<!-- ============ CONFIRM DIALOG ============ -->
+<div class="dialog" id="confirm">
+  <div class="dialog-box">
+    <h2 id="confirm-title">Are you sure?</h2>
+    <p id="confirm-msg">This can't be undone.</p>
+    <div class="dialog-row">
+      <button class="btn ghost" id="confirm-no">Cancel</button>
+      <button class="btn danger" id="confirm-yes">Delete</button>
+    </div>
   </div>
 </div>
 

@@ -491,37 +491,48 @@
     if (tab === "home") { renderHome(); go("home"); }
     else if (tab === "mygames") { renderMyGames(); go("mygames"); }
     else if (tab === "stats") { renderStats(); go("stats"); }
-    else if (tab === "profile") { go("profile"); }
+    else if (tab === "profile") { renderProfile(); go("profile"); }
   }
   function openSheet(id) { $(id).classList.add("show"); }
   function closeSheet(id) { $(id).classList.remove("show"); }
 
   /* ---------- Home / lobby lists ---------- */
-  function lobbyEl(l, onClick) {
+  function shade(hex, p) {
+    const h = hex.replace("#", "");
+    const c = (i) => Math.round(Math.min(255, Math.max(0, parseInt(h.slice(i, i + 2), 16) + 255 * p)));
+    return `rgb(${c(0)},${c(2)},${c(4)})`;
+  }
+  // Every lobby card opens Game Setup; the pencil is the explicit edit affordance.
+  function lobbyEl(l) {
     const n = l.players.length, im = Math.min(l.cfg.imposters, Math.max(1, Math.floor(n / 2)));
-    const el = document.createElement("button");
-    el.className = "lobby"; el.type = "button";
+    const el = document.createElement("div");
+    el.className = "lobby";
     el.innerHTML =
-      `<span class="lobby-av" style="background:${hexA(l.color, 0.16)};color:${l.color}">${l.emoji || "👥"}</span>` +
-      `<span><span class="lobby-nm">${escapeHtml(l.name)}</span>` +
+      `<span class="lobby-av" style="background:linear-gradient(135deg,${shade(l.color, 0.12)},${shade(l.color, -0.14)});color:#fff">${l.emoji || "👥"}</span>` +
+      `<span style="min-width:0"><span class="lobby-nm">${escapeHtml(l.name)}</span>` +
       `<span class="lobby-meta"><span>${n} Players</span><span class="imp">${im} Imposter${im > 1 ? "s" : ""}</span></span></span>` +
-      `<span class="lobby-chev">›</span>`;
-    el.addEventListener("click", () => onClick(l));
+      `<button class="lobby-edit" aria-label="Edit lobby">✎</button>` +
+      `<span class="lobby-go">›</span>`;
+    el.querySelector(".lobby-edit").addEventListener("click", (e) => { e.stopPropagation(); openEditor(l.id, "mygames"); });
+    el.addEventListener("click", () => openSetup(l.id));
     return el;
   }
-  function fillList(container, onClick) {
+  function fillList(container) {
     container.innerHTML = "";
-    if (!lobbies.length) { container.innerHTML = `<div class="empty">No lobbies yet. Tap ＋ to create one.</div>`; return; }
-    lobbies.forEach((l) => container.appendChild(lobbyEl(l, onClick)));
+    if (!lobbies.length) { container.innerHTML = `<div class="empty">No lobbies yet. Tap the ＋ tab to create one.</div>`; return; }
+    lobbies.forEach((l) => container.appendChild(lobbyEl(l)));
   }
-  function renderHome() { fillList($("lobby-list"), (l) => openSetup(l.id)); }
-  function renderMyGames() { fillList($("mygames-list"), (l) => openEditor(l.id, "mygames")); }
+  function renderHome() { fillList($("lobby-list")); }
+  function renderMyGames() { fillList($("mygames-list")); }
   function renderStats() {
     const n = roundsPlayed();
+    $("stat-rounds").textContent = n;
+    $("stat-lobbies").textContent = lobbies.length;
     $("stats-count").textContent = n
-      ? `You've played ${n} round${n > 1 ? "s" : ""} on this device. Keep the crew guessing.`
-      : "You've played 0 rounds so far. Play a game and your stats will show up here.";
+      ? `${n} round${n > 1 ? "s" : ""} in. Keep the crew guessing.`
+      : "Play a game and your history builds up here.";
   }
+  function renderProfile() { $("prof-rounds").textContent = roundsPlayed(); }
 
   /* ---------- Lobby editor ---------- */
   function openEditor(id, ret) {
@@ -535,6 +546,7 @@
     curColor = l ? (l.color || "#6d5df6") : "#6d5df6";
     renderEmojiPick();
     renderNames();
+    validateLobby();
     go("lobby");
   }
   function renderEmojiPick() {
@@ -546,7 +558,14 @@
       box.appendChild(b);
     });
   }
+  function validateLobby() {
+    const ok = ($("lobby-name").value || "").trim().length > 0;
+    $("lobby-save").disabled = !ok;
+    $("lobby-name-hint").textContent = ok ? "" : "Give your lobby a name to save it.";
+    return ok;
+  }
   function saveLobby() {
+    if (!validateLobby()) { $("lobby-name").focus(); return; }
     sortPlayers();
     const name = ($("lobby-name").value || "").trim() || "New lobby";
     if (editingId) {
@@ -563,9 +582,21 @@
   }
   function deleteLobby() {
     if (!editingId) return;
-    lobbies = lobbies.filter((x) => x.id !== editingId);
-    saveLobbies();
-    setTab("mygames");
+    const l = byId(editingId);
+    askConfirm(`Delete "${l ? l.name : "this lobby"}"?`,
+      "The lobby and its players will be removed. This can't be undone.", "Delete", () => {
+        lobbies = lobbies.filter((x) => x.id !== editingId);
+        saveLobbies();
+        setTab("mygames");
+      });
+  }
+  let confirmAction = null;
+  function askConfirm(title, msg, yesLabel, onYes) {
+    $("confirm-title").textContent = title;
+    $("confirm-msg").textContent = msg;
+    $("confirm-yes").textContent = yesLabel || "Delete";
+    confirmAction = onYes;
+    $("confirm").classList.add("show");
   }
 
   function renderNames() {
@@ -897,19 +928,53 @@
 
     $("intro-ok").addEventListener("click", () => { closeSheet("intro"); try { localStorage.setItem(INTRO_KEY, "1"); } catch (e) {} });
     $("guide-ok").addEventListener("click", () => closeSheet("guide"));
+    $("guide-close").addEventListener("click", () => closeSheet("guide"));
 
-    // Light / dark theme toggle (header button)
-    const themeBtn = $("crownBtn");
-    const curTheme = () => (document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
-    function applyTheme(t, save) {
+    // Inline lobby-name validation
+    $("lobby-name").addEventListener("input", validateLobby);
+
+    // Confirm dialog
+    $("confirm-no").addEventListener("click", () => $("confirm").classList.remove("show"));
+    $("confirm").addEventListener("click", (e) => { if (e.target.id === "confirm") $("confirm").classList.remove("show"); });
+    $("confirm-yes").addEventListener("click", () => {
+      $("confirm").classList.remove("show");
+      const a = confirmAction; confirmAction = null; if (a) a();
+    });
+
+    // ----- Theme: dark / warm / light -----
+    const THEME_META = { dark: "#0b0b14", warm: "#f3ecd9", light: "#eef0f6" };
+    function setTheme(t, save) {
+      if (!THEME_META[t]) t = "dark";
       document.documentElement.setAttribute("data-theme", t);
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute("content", t === "light" ? "#eceef5" : "#0a0a0f");
-      if (themeBtn) themeBtn.textContent = t === "light" ? "☀️" : "🌙";
+      if (meta) meta.setAttribute("content", THEME_META[t]);
+      document.querySelectorAll("[data-theme-pick]").forEach((s) => s.classList.toggle("sel", s.dataset.themePick === t));
       if (save) { try { localStorage.setItem("imposter_theme", t); } catch (e) {} }
     }
-    applyTheme(curTheme(), false);
-    if (themeBtn) themeBtn.addEventListener("click", () => applyTheme(curTheme() === "light" ? "dark" : "light", true));
+    let savedTheme = null; try { savedTheme = localStorage.getItem("imposter_theme"); } catch (e) {}
+    setTheme(["dark", "warm", "light"].indexOf(savedTheme) >= 0 ? savedTheme : "dark", false);
+    document.querySelectorAll("[data-theme-pick]").forEach((s) =>
+      s.addEventListener("click", () => setTheme(s.dataset.themePick, true)));
+
+    // ----- Hamburger drawer -----
+    const openDrawer = () => $("drawer").classList.add("show");
+    const closeDrawer = () => $("drawer").classList.remove("show");
+    $("menuBtn").addEventListener("click", openDrawer);
+    $("drawer-close").addEventListener("click", closeDrawer);
+    $("drawer").querySelector("[data-close-drawer]").addEventListener("click", closeDrawer);
+    $("drawerNew").addEventListener("click", () => { closeDrawer(); openEditor(null, "mygames"); });
+    $("drawerGuide").addEventListener("click", () => { closeDrawer(); openSheet("guide"); });
+
+    // ----- Avatar + profile shortcuts -----
+    $("avatarBtn").addEventListener("click", () => setTab("profile"));
+    $("profTheme").addEventListener("click", openDrawer);
+    $("profGuide").addEventListener("click", () => openSheet("guide"));
+
+    // ----- Escape closes any overlay -----
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      closeDrawer(); closeSheet("guide"); closeSheet("catPicker"); $("confirm").classList.remove("show");
+    });
 
     setTab("home");
     try { if (!localStorage.getItem(INTRO_KEY)) openSheet("intro"); } catch (e) {}
